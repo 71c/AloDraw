@@ -33,9 +33,12 @@ def broadcast_message():
 @socketio.on('change pixel')
 def change_pixel(data):
   x, y = int(data['x']), int(data['y'])
+
+  pixel_index = (y * image.width + x) * 4
+
   color = tuple(map(int, re.findall('\d+', data['color'])))
 
-  emit('broadcast change pixel', {'x': x, 'y': y, 'color': color}, broadcast=True)
+  emit('broadcast change pixel', {'color': color, 'index': pixel_index}, broadcast=True)
 
   image.putpixel((x, y), color)
   image.save('image.png')
