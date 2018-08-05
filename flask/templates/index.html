@@ -13,6 +13,29 @@
     td {
       padding: 0px;
     }
+    /*canvas {*/
+    /*  image-rendering: pixelated;*/
+    /*}*/
+    canvas {
+      image-rendering: optimizeSpeed !important;            /* Older versions of FF          */
+      image-rendering: -moz-crisp-edges !important;          /* FF 6.0+                       */
+      image-rendering: -webkit-optimize-contrast !important; /* Safari                        */
+      image-rendering: -o-crisp-edges !important;            /* OS X & Windows Opera (12.02+) */
+      image-rendering: pixelated !important;                 /* Awesome future-browsers       */
+      -ms-interpolation-mode: nearest-neighbor !important;   /* IE                            */
+    }
+
+
+    /*canvas {*/
+    /*	image-rendering: optimizeSpeed;*/
+    /*	image-rendering: -moz-crisp-edges;*/
+    /*	image-rendering: -webkit-optimize-contrast;*/
+    /*	image-rendering: optimize-contrast;*/
+    /*	-ms-interpolation-mode: nearest-neighbor;*/
+    /*}*/
+    /*img {*/
+    /*  image-rendering: pixelated;*/
+    /*}*/
   </style>
 </head>
 
