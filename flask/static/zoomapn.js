@@ -5,7 +5,6 @@ canvas.height = 600;
 var gkhead = new Image;
 
 window.onload = function() {
-
   var ctx = canvas.getContext('2d');
   trackTransforms(ctx);
 
