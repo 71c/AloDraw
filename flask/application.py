@@ -8,13 +8,15 @@ from flask_socketio import SocketIO, emit
 
 from PIL import Image
 
-width, height = 300, 300
+width, height = 1600, 1600
+
+image_name = 'image4.png'
 
 try:
-  image = Image.open('image.1.png')
+  image = Image.open(image_name)
 except:
-  image = Image.new('RGB', (width, height))
-  image.save('image.1.png')
+  image = Image.new('RGBA', (width, height), color=(34, 34, 34,255))
+  image.save(image_name)
 
 
 
@@ -41,6 +43,6 @@ def change_pixel(data):
   emit('broadcast change pixel', {'color': color, 'index': pixel_index}, broadcast=True)
 
   image.putpixel((x, y), color)
-  image.save('image.png')
+  image.save(image_name)
 
   print((int(data['x']), int(data['y'])), color)

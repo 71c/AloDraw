@@ -12,6 +12,27 @@ var height;
 
 var zoomLevel = 1;
 
+var currentColor = 'rgb(34, 34, 34)';
+
+var colors = [
+  'rgb(255, 255, 255)',
+  'rgb(228, 228, 228)',
+  'rgb(136, 136, 136)',
+  'rgb(34, 34, 34)',
+  'rgb(255, 167, 209)',
+  'rgb(229, 0, 0)',
+  'rgb(229, 149, 0)',
+  'rgb(160, 106, 66)',
+  'rgb(229, 217, 0)',
+  'rgb(148, 224, 68)',
+  'rgb(2, 190, 1)',
+  'rgb(0, 211, 221)',
+  'rgb(0, 131, 199)',
+  'rgb(0, 0, 234)',
+  'rgb(207, 110, 228)',
+  'rgb(130, 0, 128)',
+];
+
 
 document.addEventListener('DOMContentLoaded', () => {
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
@@ -22,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     height = data.height;
 
     var buffer = new Uint8ClampedArray(data.buffer);
+    console.log(buffer);
 
     ctx = canvas.getContext('2d');
 
@@ -38,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.append(canvas);
 
 
+    panzoom(canvas);
+
+
     // var slider = document.getElementById('customRange2');
     // setInterval(() => {
     //   canvas.style.width = slider.value + 'px';
@@ -46,19 +71,33 @@ document.addEventListener('DOMContentLoaded', () => {
     //   // canvas.height = slider.value + '';
     // }, 100);
 
-    document.getElementById('zoom-in').onclick = function() {
-      zoomLevel++;
-      canvas.style.width = zoomLevel * width + 'px';
-      canvas.style.height = zoomLevel * height + 'px';
-    };
+    document.getElementById('zoom-in').onclick = zoomIn;
 
-    document.getElementById('zoom-out').onclick = function() {
-      zoomLevel--;
-      canvas.style.width = zoomLevel * width + 'px';
-      canvas.style.height = zoomLevel * height + 'px';
-    };
+    document.getElementById('zoom-out').onclick = zoomOut;
 
   });
+
+  var table = document.getElementById('colors');
+  var i = 0;
+  for (var y = 0; y < 2; y++) {
+    var row = document.createElement('tr');
+    for (var x = 0; x < 8; x++) {
+      var color = colors[i];
+      var swatch = document.createElement('div');
+      swatch.style.backgroundColor = color;
+      swatch.style.width = '20px';
+      swatch.style.height = '20px';
+      swatch.onclick = function() {
+        currentColor = this.style.backgroundColor;
+      };
+      var col = document.createElement('td');
+      col.append(swatch);
+      row.append(col);
+      i++;
+    }
+    table.append(row);
+  }
+
 
 
   socket.on('broadcast change pixel', data => {
@@ -87,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function changeColor(x, y) {
   socket.emit('change pixel', {
-    'color': 'rgb(0,0,0)',
+    'color': currentColor,
     'x': x,
     'y': y
   });
@@ -106,3 +145,24 @@ function getMousePosition(event) {
   changeColor(pixelX, pixelY);
 
 }
+
+function zoomOut() {
+  if (zoomLevel > 1) {
+    zoomLevel--;
+    canvas.style.width = zoomLevel * width + 'px';
+    canvas.style.height = zoomLevel * height + 'px';
+  }
+}
+
+function zoomIn() {
+  zoomLevel++;
+  canvas.style.width = zoomLevel * width + 'px';
+  canvas.style.height = zoomLevel * height + 'px';
+}
+
+document.addEventListener('keypress', (event) => {
+  if (event.key === '-')
+    zoomOut();
+  else if (event.key === '=' || event.key === '+')
+    zoomIn();
+});
