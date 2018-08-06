@@ -57,23 +57,33 @@ document.addEventListener('DOMContentLoaded', () => {
     image.src = canvas.toDataURL();
 
     ctx.drawImage(image,0,0);
+    canvas.style.position = 'absolute';
     document.body.append(canvas);
 
 
-    panzoom(canvas);
+    panzoom(canvas, {
+      smoothScroll: false,
+      zoomDoubleClickSpeed: 1,
+      minZoom: 1,
+      maxZoom: 10
+    });
 
 
-    // var slider = document.getElementById('customRange2');
-    // setInterval(() => {
-    //   canvas.style.width = slider.value + 'px';
-    //   canvas.style.height = slider.value + 'px';
-    //   // canvas.width = slider.value + '';
-    //   // canvas.height = slider.value + '';
+    // setInterval(function() {
+    //   var rect = canvas.getBoundingClientRect();
+    //   if (rect.left < 0) {
+    //     canvas.style.left = '0px';
+    //   }
     // }, 100);
 
-    document.getElementById('zoom-in').onclick = zoomIn;
 
-    document.getElementById('zoom-out').onclick = zoomOut;
+    // document.body.addEventListener('panstart', function(e) {
+    //   console.log('pan start', e);
+    // }, true);
+
+    // document.body.addEventListener('panend', function(e) {
+    //   console.log('pan end', e);
+    // }, true);
 
   });
 
@@ -113,12 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
     imgData.data[index + 2] = data.color[2];
 
     ctx.putImageData(imgData, 0, 0);
-
-
-
-    // var changedPixel = document.querySelector('[x="' + data.x + '"][y="' + data.y + '"]');
-    // changedPixel.style.backgroundColor = 'rgb(' + data.color[0] + ', ' + data.color[1] + ', ' + data.color[2] + ')';
-
   });
 
 
@@ -146,23 +150,3 @@ function getMousePosition(event) {
 
 }
 
-function zoomOut() {
-  if (zoomLevel > 1) {
-    zoomLevel--;
-    canvas.style.width = zoomLevel * width + 'px';
-    canvas.style.height = zoomLevel * height + 'px';
-  }
-}
-
-function zoomIn() {
-  zoomLevel++;
-  canvas.style.width = zoomLevel * width + 'px';
-  canvas.style.height = zoomLevel * height + 'px';
-}
-
-document.addEventListener('keypress', (event) => {
-  if (event.key === '-')
-    zoomOut();
-  else if (event.key === '=' || event.key === '+')
-    zoomIn();
-});
