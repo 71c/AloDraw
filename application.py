@@ -11,11 +11,11 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 from PIL import Image
 
-width, height = 4096, 4096
+width, height = 3000, 3000
 
 chunk_size = 256
 
-image_name = 'image7.png'
+image_name = 'image11.png'
 
 try:
   image = Image.open(image_name)

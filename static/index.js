@@ -20,6 +20,8 @@ var currentColor = 'rgb(34, 34, 34)';
 
 var idata;
 
+var alreadyExpanded = false;
+
 var colors = [
   'rgb(255, 255, 255)',
   'rgb(228, 228, 228)',
@@ -85,13 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // console.log(getImageRectangle());
-    socket.emit('request chunks', {chunks: getImageChunks(), 'first_time': true});
+    socket.emit('request chunks', {chunks: getImageChunks(canvas.getBoundingClientRect()), 'first_time': true});
   });
 
   socket.on('send chunks', data => {
-
-    // console.log(buffer);
-
     if (data.first_time) {
       ctx = canvas.getContext('2d', { alpha: false });
       image.src = canvas.toDataURL();
@@ -109,9 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     data.chunks.forEach(function(chunk) {
       var buffer = new Uint8ClampedArray(chunk.buffer);
-      var rekt = chunk.rectangle;
       idata.data.set(buffer);
-      ctx.putImageData(idata, rekt[0], rekt[1]);
+      ctx.putImageData(idata, chunk.rectangle[0], chunk.rectangle[1]);
     });
 
 
@@ -150,8 +148,6 @@ document.addEventListener('DOMContentLoaded', () => {
       swatch.style.height = '20px';
       swatch.onclick = function() {
         currentColor = this.style.backgroundColor;
-        console.log('hid');
-        console.log(currentColor);
       };
       var col = document.createElement('td');
       col.append(swatch);
@@ -167,9 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
     pixel.data[0] = data.color[0];
     pixel.data[1] = data.color[1];
     pixel.data[2] = data.color[2];
-
-    console.log(color);
-    console.log(pixel, pixel.data);
     ctx.putImageData(pixel, data.x, data.y);
   });
 
@@ -183,11 +176,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function changeColor(x, y) {
-  // canvas.width--;
 
-  var chunks = getImageChunks();
-  if (chunks.length > 0)
+  var colors = currentColor.match(/\d+/g);
+  for (var i = 0; i < 3; i++)
+    pixel.data[i] = parseInt(colors[i], 10);
+  ctx.putImageData(pixel, x, y);
+
+
+  // canvas.width--;
+  var rect = canvas.getBoundingClientRect();
+  var chunks = getImageChunks(rect);
+  if (chunks.length > 0) {
     socket.emit('request chunks', {chunks: chunks, 'first_time': false});
+    alreadyExpanded = false;
+  } else if (! alreadyExpanded) {
+    // rect.x -= chunkSize;
+    // rect.y -= chunkSize;
+    // rect.width += chunkSize;
+    // rect.height += chunkSize;
+    // chunks = getImageChunks(rect);
+    // if (chunks.length > 0) {
+    //   socket.emit('request chunks', {chunks: chunks, 'first_time': false});
+    //   alreadyExpanded = true;
+    // }
+  }
 
   socket.emit('change pixel', {
     'color': currentColor,
@@ -234,9 +246,8 @@ function getImageRectangle() {
   return [pixelX, pixelY, pixelRight, pixelBottom];
 }
 
-function getImageChunks() {
+function getImageChunks(rect) {
   console.log('getting...');
-  var rect = canvas.getBoundingClientRect();
   var x = Math.max(-rect.x, 0);
   var y = Math.max(-rect.y, 0);
   var pixelX = Math.floor(x / rect.width * width);
