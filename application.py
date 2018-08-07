@@ -13,6 +13,8 @@ from PIL import Image
 
 width, height = 1600, 1600
 
+chunk_size = 256
+
 image_name = 'image4.png'
 
 try:
@@ -36,7 +38,6 @@ engine = create_engine(os.getenv("DATABASE_URL"))
 db = scoped_session(sessionmaker(bind=engine))
 
 
-
 def update_user_count():
   db.execute("UPDATE users SET logged_in = FALSE WHERE 'now' - last_accessed_time > interval '00:15:00'")
   db.commit()
@@ -51,9 +52,12 @@ def send_user_count():
 def index():
   return render_template('index.html')
 
-@socketio.on('request image')
-def broadcast_message():
-  emit('send image', {'buffer': image.tobytes(), 'width': image.width, 'height': image.height})
+@socketio.on('request chunks')
+def send_image(data):
+  for i, chunk in enumerate(data['chunks']):
+    emit('send chunk', {'buffer': image.crop(chunk['rectangle']).tobytes(), 'first_time': data['first_time'] and i == 0, 'chunk': chunk['rectangle']})
+    print('sent chunk')
+    print(chunk)
   print('sent image')
 
 @socketio.on('change pixel')
@@ -70,7 +74,6 @@ def change_pixel(data):
   image.save(image_name)
 
   print((int(data['x']), int(data['y'])), color)
-
 
 
 @socketio.on('request new user id')
@@ -101,3 +104,7 @@ def enter_tab():
 def exit_tab():
   pass
 
+@socketio.on('request image dimensions')
+def give_dimensions():
+  emit('give image dimensions', {'width': image.width, 'height': image.height, 'chunk_size': chunk_size})
+  print('gave image dimensions')
