@@ -14,6 +14,8 @@ var chunkRows;
 var chunkCols;
 var chunksLoaded;
 
+var pixel;
+
 var currentColor = 'rgb(34, 34, 34)';
 
 var idata;
@@ -40,6 +42,8 @@ var colors = [
 
 document.addEventListener('DOMContentLoaded', () => {
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+
+
 
   // socket.emit('request image', {rectangle: getImageRectangle()});
   console.log('hi');
@@ -79,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.style.position = 'absolute';
     document.body.append(canvas);
 
+
     // console.log(getImageRectangle());
     socket.emit('request chunks', {chunks: getImageChunks(), 'first_time': true});
   });
@@ -88,18 +93,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // console.log(buffer);
 
     if (data.first_time) {
-      ctx = canvas.getContext('2d');
+      ctx = canvas.getContext('2d', { alpha: false });
       image.src = canvas.toDataURL();
       idata = ctx.createImageData(chunkSize, chunkSize);
       ctx.drawImage(image, 0, 0);
+      pixel = ctx.createImageData(1, 1);
+      pixel.data[3] = 255;
     }
 
     data.chunks.forEach(function(chunk) {
       chunksLoaded[chunk.i][chunk.j] = true;
     });
 
+
+
     data.chunks.forEach(function(chunk) {
-      console.log(chunk.buffer);
       var buffer = new Uint8ClampedArray(chunk.buffer);
       var rekt = chunk.rectangle;
       idata.data.set(buffer);
@@ -142,6 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
       swatch.style.height = '20px';
       swatch.onclick = function() {
         currentColor = this.style.backgroundColor;
+        console.log('hid');
+        console.log(currentColor);
       };
       var col = document.createElement('td');
       col.append(swatch);
@@ -154,25 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   socket.on('broadcast change pixel', data => {
+    pixel.data[0] = data.color[0];
+    pixel.data[1] = data.color[1];
+    pixel.data[2] = data.color[2];
 
-    console.log('stargi');
-
-    // var imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
-    var imgData = ctx.getImageData(data.x, data.y, 1, 1);
-
-    // var index = data.index;
-    // imgData.data[index] = data.color[0];
-    // imgData.data[index + 1] = data.color[1];
-    // imgData.data[index + 2] = data.color[2];
-
-    imgData.data[0] = data.color[0];
-    imgData.data[1] = data.color[1];
-    imgData.data[2] = data.color[2];
-
-    // ctx.putImageData(imgData, 0, 0);
-    ctx.putImageData(imgData, data.x, data.y);
-
-    console.log('pargi');
+    console.log(color);
+    console.log(pixel, pixel.data);
+    ctx.putImageData(pixel, data.x, data.y);
   });
 
   socket.on('give new user id', data => {
@@ -185,9 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function changeColor(x, y) {
-  // var chunks = getImageChunks();
-  // if (chunks.length > 0)
-  //   socket.emit('request chunks', {chunks: chunks, 'first_time': false});
+  // canvas.width--;
+
+  var chunks = getImageChunks();
+  if (chunks.length > 0)
+    socket.emit('request chunks', {chunks: chunks, 'first_time': false});
 
   socket.emit('change pixel', {
     'color': currentColor,

@@ -13,7 +13,7 @@ from PIL import Image
 
 width, height = 4096, 4096
 
-chunk_size = 512
+chunk_size = 256
 
 image_name = 'image7.png'
 
