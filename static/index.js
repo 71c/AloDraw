@@ -16,6 +16,8 @@ var chunksLoaded;
 
 var currentColor = 'rgb(34, 34, 34)';
 
+var idata;
+
 var colors = [
   'rgb(255, 255, 255)',
   'rgb(228, 228, 228)',
@@ -81,25 +83,30 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.emit('request chunks', {chunks: getImageChunks(), 'first_time': true});
   });
 
-  socket.on('send chunk', data => {
-    var buffer = new Uint8ClampedArray(data.buffer);
+  socket.on('send chunks', data => {
+
     // console.log(buffer);
 
     if (data.first_time) {
       ctx = canvas.getContext('2d');
+      image.src = canvas.toDataURL();
+      idata = ctx.createImageData(chunkSize, chunkSize);
+      ctx.drawImage(image, 0, 0);
     }
 
-    // ctx.clearRect(0, 0, canvas.width, canvas.height);
+    data.chunks.forEach(function(chunk) {
+      chunksLoaded[chunk.i][chunk.j] = true;
+    });
 
-    var rekt = data.chunk;
+    data.chunks.forEach(function(chunk) {
+      console.log(chunk.buffer);
+      var buffer = new Uint8ClampedArray(chunk.buffer);
+      var rekt = chunk.rectangle;
+      idata.data.set(buffer);
+      ctx.putImageData(idata, rekt[0], rekt[1]);
+    });
 
-    var idata = ctx.createImageData(rekt[2] - rekt[0], rekt[3] - rekt[1]);
-    idata.data.set(buffer);
-    ctx.putImageData(idata, rekt[0], rekt[1]);
 
-    image.src = canvas.toDataURL();
-
-    ctx.drawImage(image, 0, 0);
 
     if (data.first_time) {
       panzoom(canvas, {
@@ -147,16 +154,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   socket.on('broadcast change pixel', data => {
-    // console.log(getImageRectangle());
-    var imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
 
-    var index = data.index;
+    console.log('stargi');
 
-    imgData.data[index] = data.color[0];
-    imgData.data[index + 1] = data.color[1];
-    imgData.data[index + 2] = data.color[2];
+    // var imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    var imgData = ctx.getImageData(data.x, data.y, 1, 1);
 
-    ctx.putImageData(imgData, 0, 0);
+    // var index = data.index;
+    // imgData.data[index] = data.color[0];
+    // imgData.data[index + 1] = data.color[1];
+    // imgData.data[index + 2] = data.color[2];
+
+    imgData.data[0] = data.color[0];
+    imgData.data[1] = data.color[1];
+    imgData.data[2] = data.color[2];
+
+    // ctx.putImageData(imgData, 0, 0);
+    ctx.putImageData(imgData, data.x, data.y);
+
+    console.log('pargi');
   });
 
   socket.on('give new user id', data => {
@@ -169,13 +185,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function changeColor(x, y) {
-  socket.emit('request chunks', {chunks: getImageChunks(), 'first_time': false});
+  // var chunks = getImageChunks();
+  // if (chunks.length > 0)
+  //   socket.emit('request chunks', {chunks: chunks, 'first_time': false});
+
   socket.emit('change pixel', {
     'color': currentColor,
     'x': x,
     'y': y,
     'id': localStorage.getItem('id')
   });
+
+
 }
 
 
@@ -214,6 +235,7 @@ function getImageRectangle() {
 }
 
 function getImageChunks() {
+  console.log('getting...');
   var rect = canvas.getBoundingClientRect();
   var x = Math.max(-rect.x, 0);
   var y = Math.max(-rect.y, 0);
@@ -242,6 +264,6 @@ function getImageChunks() {
       }
     }
   }
-  console.log(chunks);
+  console.log('done');
   return chunks;
 }

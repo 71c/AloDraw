@@ -11,11 +11,11 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 from PIL import Image
 
-width, height = 1600, 1600
+width, height = 4096, 4096
 
-chunk_size = 256
+chunk_size = 512
 
-image_name = 'image4.png'
+image_name = 'image7.png'
 
 try:
   image = Image.open(image_name)
@@ -54,10 +54,12 @@ def index():
 
 @socketio.on('request chunks')
 def send_image(data):
-  for i, chunk in enumerate(data['chunks']):
-    emit('send chunk', {'buffer': image.crop(chunk['rectangle']).tobytes(), 'first_time': data['first_time'] and i == 0, 'chunk': chunk['rectangle']})
-    print('sent chunk')
-    print(chunk)
+  print('sending image...')
+  chunks = []
+  for chunk in data['chunks']:
+    chunk['buffer'] = image.crop(chunk['rectangle']).tobytes()
+    chunks += [chunk]
+  emit('send chunks', {'chunks': chunks, 'first_time': data['first_time']})
   print('sent image')
 
 @socketio.on('change pixel')
@@ -68,7 +70,7 @@ def change_pixel(data):
 
   color = tuple(map(int, re.findall('\d+', data['color'])))
 
-  emit('broadcast change pixel', {'color': color, 'index': pixel_index}, broadcast=True)
+  emit('broadcast change pixel', {'color': color, 'index': pixel_index, 'x': x, 'y': y}, broadcast=True)
 
   image.putpixel((x, y), color)
   image.save(image_name)
