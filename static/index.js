@@ -37,15 +37,19 @@ var colors = [
 document.addEventListener('DOMContentLoaded', () => {
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
-
-
-
   socket.emit('request image');
-
 
   window.onbeforeunload = function() {
     socket.emit('exit site', {'id': localStorage.getItem('id')});
   };
+
+  $(window).focus(function() {
+    socket.emit('enter tab');
+  });
+
+  $(window).blur(function() {
+    socket.emit('exit tab');
+  });
 
   socket.on('send user count', data => {
     document.getElementById('user_count').innerHTML = data.user_count;
@@ -86,10 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       socket.emit('enter site', {'id': localStorage.getItem('id')});
     }
-
-
-
-    socket.emit('request user count');
   });
 
 
@@ -142,7 +142,8 @@ function changeColor(x, y) {
   socket.emit('change pixel', {
     'color': currentColor,
     'x': x,
-    'y': y
+    'y': y,
+    'id': localStorage.getItem('id')
   });
 }
 
