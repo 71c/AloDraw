@@ -37,7 +37,20 @@ var colors = [
 document.addEventListener('DOMContentLoaded', () => {
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
+
+
+
   socket.emit('request image');
+
+
+  window.onbeforeunload = function() {
+    socket.emit('exit site', {'id': localStorage.getItem('id')});
+  };
+
+  socket.on('send user count', data => {
+    document.getElementById('user_count').innerHTML = data.user_count;
+  });
+
   socket.on('send image', data => {
     width = data.width;
     height = data.height;
@@ -68,24 +81,18 @@ document.addEventListener('DOMContentLoaded', () => {
       maxZoom: 10
     });
 
-
-    // setInterval(function() {
-    //   var rect = canvas.getBoundingClientRect();
-    //   if (rect.left < 0) {
-    //     canvas.style.left = '0px';
-    //   }
-    // }, 100);
+    if (! localStorage.getItem('id')) {
+      socket.emit('request new user id');
+    } else {
+      socket.emit('enter site', {'id': localStorage.getItem('id')});
+    }
 
 
-    // document.body.addEventListener('panstart', function(e) {
-    //   console.log('pan start', e);
-    // }, true);
 
-    // document.body.addEventListener('panend', function(e) {
-    //   console.log('pan end', e);
-    // }, true);
-
+    socket.emit('request user count');
   });
+
+
 
   var table = document.getElementById('colors');
   var i = 0;
@@ -111,9 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   socket.on('broadcast change pixel', data => {
-
-    console.log('i got changed pixel');
-
     var imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
 
     var index = data.index;
@@ -125,8 +129,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.putImageData(imgData, 0, 0);
   });
 
+  socket.on('give new user id', data => {
+    localStorage.setItem('id', data.id);
+  });
+
 
 });
+
+
 
 function changeColor(x, y) {
   socket.emit('change pixel', {
