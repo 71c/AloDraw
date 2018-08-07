@@ -71,9 +71,6 @@ def change_pixel(data):
 
   print((int(data['x']), int(data['y'])), color)
 
-  # db.execute("UPDATE users SET last_accessed_time = 'now' WHERE id = :id", {'id': data['id']})
-  # db.commit()
-
 
 
 @socketio.on('request new user id')
@@ -82,16 +79,12 @@ def create_new_user():
   db.commit()
   user_id = list(insertion)[0][0]
   emit('give new user id', {'id': user_id})
-
-  update_user_count()
   send_user_count()
 
 @socketio.on('enter site')
 def record_enter_site(data):
   db.execute("UPDATE users SET logged_in = TRUE, last_accessed_time = 'now' WHERE id = :id", {'id': data['id']})
   db.commit()
-
-  update_user_count()
   send_user_count()
 
 @socketio.on('exit site')
@@ -100,11 +93,11 @@ def record_exit_site(data):
   db.commit()
   send_user_count()
 
+@socketio.on('enter tab')
+def enter_tab():
+  pass
 
 @socketio.on('exit tab')
 def exit_tab():
-  print('a user exited a tab')
+  pass
 
-@socketio.on('enter tab')
-def exit_tab():
-  print('a user entered a tab')
