@@ -7,4 +7,4 @@ Flask-SocketIO==3.0.1
 Flask-SQLAlchemy==2.3.2
 gunicorn==0.16.1
 Jinja2==2.10
-PIL
+Pillow==5.1.0
