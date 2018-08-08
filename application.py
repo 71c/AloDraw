@@ -24,7 +24,6 @@ pixel_changes = []
 image_name = 'image11.png'
 
 
-
 try:
   image = Image.open(image_name)
 except:
@@ -45,6 +44,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 engine = create_engine(os.getenv("DATABASE_URL"))
 db = scoped_session(sessionmaker(bind=engine))
 
+# I found this function which is a Python equivalent of the JavaScript setInterval at https://stackoverflow.com/a/14035296/9911203
 def set_interval(func, sec):
     def func_wrapper():
         set_interval(func, sec)
@@ -92,6 +92,7 @@ def index():
 
 @socketio.on('request chunks')
 def send_image(data):
+  emit('got chunks request', {'chunks': data['chunks']})
   print('sending image...')
   chunks = []
   for chunk in data['chunks']:
@@ -152,14 +153,6 @@ def record_exit_site(data):
   send_user_count()
 
   commit_pixel_changes()
-
-@socketio.on('enter tab')
-def enter_tab():
-  pass
-
-@socketio.on('exit tab')
-def exit_tab():
-  pass
 
 @socketio.on('request image dimensions')
 def give_dimensions():

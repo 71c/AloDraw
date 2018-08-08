@@ -45,23 +45,11 @@ var colors = [
 document.addEventListener('DOMContentLoaded', () => {
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
-
-
-  // socket.emit('request image', {rectangle: getImageRectangle()});
-  console.log('hi');
   socket.emit('request image dimensions');
 
   window.onbeforeunload = function() {
     socket.emit('exit site', {'id': localStorage.getItem('id')});
   };
-
-  // $(window).focus(function() {
-  //   socket.emit('enter tab');
-  // });
-
-  // $(window).blur(function() {
-  //   socket.emit('exit tab');
-  // });
 
   socket.on('send user count', data => {
     document.getElementById('user_count').innerHTML = data.user_count;
@@ -85,9 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.style.position = 'absolute';
     document.body.append(canvas);
 
-
-    // console.log(getImageRectangle());
     socket.emit('request chunks', {chunks: getImageChunks(canvas.getBoundingClientRect()), 'first_time': true});
+  });
+
+  socket.on('got chunks request', data => {
+    data.chunks.forEach(function(chunk) {
+      chunksLoaded[chunk.i][chunk.j] = true;
+    });
   });
 
   socket.on('send chunks', data => {
@@ -98,18 +90,14 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.drawImage(image, 0, 0);
       pixel = ctx.createImageData(1, 1);
       pixel.data[3] = 255;
+      setInterval(requestChunks, 1000);
     }
 
     data.chunks.forEach(function(chunk) {
-      if (! chunksLoaded[chunk.i][chunk.j]) {
-        chunksLoaded[chunk.i][chunk.j] = true;
-        var buffer = new Uint8ClampedArray(chunk.buffer);
-        idata.data.set(buffer);
-        ctx.putImageData(idata, chunk.rectangle[0], chunk.rectangle[1]);
-      }
+      var buffer = new Uint8ClampedArray(chunk.buffer);
+      idata.data.set(buffer);
+      ctx.putImageData(idata, chunk.rectangle[0], chunk.rectangle[1]);
     });
-
-
 
     if (data.first_time) {
       panzoom(canvas, {
@@ -124,8 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         socket.emit('enter site', {'id': localStorage.getItem('id')});
       }
-
-      // console.log(getImageRectangle());
     }
 
 
@@ -174,30 +160,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function changeColor(x, y) {
-
   var colors = currentColor.match(/\d+/g);
   for (var i = 0; i < 3; i++)
     pixel.data[i] = parseInt(colors[i], 10);
   ctx.putImageData(pixel, x, y);
-
-
-  // canvas.width--;
-  var rect = canvas.getBoundingClientRect();
-  var chunks = getImageChunks(rect);
-  if (chunks.length > 0) {
-    socket.emit('request chunks', {chunks: chunks, 'first_time': false});
-    alreadyExpanded = false;
-  } else if (! alreadyExpanded) {
-    rect.x -= chunkSize;
-    rect.y -= chunkSize;
-    rect.width += chunkSize;
-    rect.height += chunkSize;
-    chunks = getImageChunks(rect);
-    if (chunks.length > 0) {
-      socket.emit('request chunks', {chunks: chunks, 'first_time': false});
-      alreadyExpanded = true;
-    }
-  }
 
   socket.emit('change pixel', {
     'color': currentColor,
@@ -244,7 +210,34 @@ function getImageRectangle() {
   return [pixelX, pixelY, pixelRight, pixelBottom];
 }
 
+function requestChunks() {
+  var rect = canvas.getBoundingClientRect();
+  var chunks = getImageChunks(rect);
+  if (chunks.length > 0) {
+    socket.emit('request chunks', {chunks: chunks, 'first_time': false});
+    // chunks.forEach(chunk => {
+    //   chunksLoaded[chunk.i][chunk.j] = true;
+    // });
+    alreadyExpanded = false;
+  } else if (! alreadyExpanded) {
+    rect.x -= chunkSize;
+    rect.y -= chunkSize;
+    rect.width += chunkSize;
+    rect.height += chunkSize;
+    chunks = getImageChunks(rect);
+
+    if (chunks.length > 0) {
+      socket.emit('request chunks', {chunks: chunks, 'first_time': false});
+      // chunks.forEach(chunk => {
+      //   chunksLoaded[chunk.i][chunk.j] = true;
+      // });
+    }
+    alreadyExpanded = true;
+  }
+}
+
 function getImageChunks(rect) {
+  console.time('someFunction');
   var x = Math.max(-rect.x, 0);
   var y = Math.max(-rect.y, 0);
   var pixelX = Math.floor(x / rect.width * width);
@@ -272,5 +265,6 @@ function getImageChunks(rect) {
       }
     }
   }
+  console.timeEnd('someFunction');
   return chunks;
 }
