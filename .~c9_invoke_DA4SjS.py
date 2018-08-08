@@ -144,3 +144,17 @@ def exit_tab():
 def give_dimensions():
   emit('give image dimensions', {'width': image.width, 'height': image.height, 'chunk_size': chunk_size})
   print('gave image dimensions')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
