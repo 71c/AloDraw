@@ -15,7 +15,7 @@ from threading import Timer
 
 width, height = 3000, 3000
 
-chunk_size = 1500
+chunk_size = 512
 
 last_pixel_change_time = time.time()
 counter = 0
