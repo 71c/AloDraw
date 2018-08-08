@@ -14,3 +14,4 @@ gevent
 gevent-websocket
 gevent-socketio
 requests
+PIL
