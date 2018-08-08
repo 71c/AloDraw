@@ -15,7 +15,7 @@ from threading import Timer
 
 width, height = 3000, 3000
 
-chunk_size = 512
+chunk_size = 1500
 
 last_pixel_change_time = time.time()
 counter = 0
@@ -63,7 +63,7 @@ def commit_pixel_changes():
   global last_pixel_change_time
   global counter
   if len(pixel_changes) > 0:
-    print('wifjsojf')
+    print('committing changes')
     emit('broadcast change pixels', {'pixel_changes': pixel_changes}, broadcast=True)
     for change in pixel_changes:
       image.putpixel((change['x'], change['y']), change['color'])
@@ -82,17 +82,9 @@ def user_count():
 def send_user_count():
   emit('send user count', {'user_count': user_count()}, broadcast=True)
 
-
-
-
-
 @app.route('/')
 def index():
   return render_template('index.html')
-
-@socketio.on('start request chunks')
-def send_confirmation(data):
-  emit('got chunks request', data)
 
 @socketio.on('request chunks')
 def send_image(data):
@@ -116,11 +108,9 @@ def change_pixel(data):
 
   color = tuple(map(int, re.findall('\d+', data['color'])))
 
-  pixel_change = {'color': color, 'index': pixel_index, 'x': x, 'y': y}
+  pixel_changes.append({'color': color, 'index': pixel_index, 'x': x, 'y': y})
 
-  pixel_changes += [pixel_change]
-
-  if time.time() - last_pixel_change_time < 2:
+  if time.time() - last_pixel_change_time < 1.5:
     counter += 1
   else:
     counter = 0

@@ -75,19 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.style.position = 'absolute';
     document.body.append(canvas);
 
-    socket.emit('start request chunks', {chunks: getImageChunks(canvas.getBoundingClientRect()), 'first_time': true});
-  });
-
-  socket.on('got chunks request', data => {
-    var doe = false;
-    data.chunks.forEach(function(chunk) {
-      if (! chunksLoaded[chunk.i][chunk.j]) {
-        doe = true;
-      }
-      chunksLoaded[chunk.i][chunk.j] = true;
-    });
-    if (doe)
-      socket.emit('request chunks', data);
+    socket.emit('request chunks', {chunks: getImageChunks(canvas.getBoundingClientRect()), 'first_time': true});
   });
 
   socket.on('send chunks', data => {
@@ -220,7 +208,10 @@ function requestChunks() {
   var rect = canvas.getBoundingClientRect();
   var chunks = getImageChunks(rect);
   if (chunks.length > 0) {
-    socket.emit('start request chunks', {chunks: chunks, 'first_time': false});
+    chunks.forEach(function(chunk) {
+      chunksLoaded[chunk.i][chunk.j] = true;
+    });
+    socket.emit('request chunks', {chunks: chunks, 'first_time': false});
     alreadyExpanded = false;
   } else if (! alreadyExpanded) {
     rect.x -= chunkSize;
@@ -229,7 +220,10 @@ function requestChunks() {
     rect.height += chunkSize;
     chunks = getImageChunks(rect);
     if (chunks.length > 0) {
-      socket.emit('start request chunks', {chunks: chunks, 'first_time': false});
+      chunks.forEach(function(chunk) {
+        chunksLoaded[chunk.i][chunk.j] = true;
+      });
+      socket.emit('request chunks', {chunks: chunks, 'first_time': false});
       alreadyExpanded = true;
     }
   }
