@@ -90,9 +90,12 @@ def send_user_count():
 def index():
   return render_template('index.html')
 
+@socketio.on('start request chunks')
+def send_confirmation(data):
+  emit('got chunks request', data)
+
 @socketio.on('request chunks')
 def send_image(data):
-  emit('got chunks request', {'chunks': data['chunks']})
   print('sending image...')
   chunks = []
   for chunk in data['chunks']:

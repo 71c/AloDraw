@@ -22,6 +22,8 @@ var idata;
 
 var alreadyExpanded = false;
 
+var requesting;
+
 var colors = [
   'rgb(255, 255, 255)',
   'rgb(228, 228, 228)',
@@ -73,13 +75,19 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.style.position = 'absolute';
     document.body.append(canvas);
 
-    socket.emit('request chunks', {chunks: getImageChunks(canvas.getBoundingClientRect()), 'first_time': true});
+    socket.emit('start request chunks', {chunks: getImageChunks(canvas.getBoundingClientRect()), 'first_time': true});
   });
 
   socket.on('got chunks request', data => {
+    var doe = false;
     data.chunks.forEach(function(chunk) {
+      if (! chunksLoaded[chunk.i][chunk.j]) {
+        doe = true;
+      }
       chunksLoaded[chunk.i][chunk.j] = true;
     });
+    if (doe)
+      socket.emit('request chunks', data);
   });
 
   socket.on('send chunks', data => {
@@ -90,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.drawImage(image, 0, 0);
       pixel = ctx.createImageData(1, 1);
       pixel.data[3] = 255;
-      setInterval(requestChunks, 1000);
+      requesting = setInterval(requestChunks, 1000);
     }
 
     data.chunks.forEach(function(chunk) {
@@ -113,8 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
         socket.emit('enter site', {'id': localStorage.getItem('id')});
       }
     }
-
-
   });
 
 
@@ -214,10 +220,7 @@ function requestChunks() {
   var rect = canvas.getBoundingClientRect();
   var chunks = getImageChunks(rect);
   if (chunks.length > 0) {
-    socket.emit('request chunks', {chunks: chunks, 'first_time': false});
-    // chunks.forEach(chunk => {
-    //   chunksLoaded[chunk.i][chunk.j] = true;
-    // });
+    socket.emit('start request chunks', {chunks: chunks, 'first_time': false});
     alreadyExpanded = false;
   } else if (! alreadyExpanded) {
     rect.x -= chunkSize;
@@ -225,14 +228,13 @@ function requestChunks() {
     rect.width += chunkSize;
     rect.height += chunkSize;
     chunks = getImageChunks(rect);
-
     if (chunks.length > 0) {
-      socket.emit('request chunks', {chunks: chunks, 'first_time': false});
-      // chunks.forEach(chunk => {
-      //   chunksLoaded[chunk.i][chunk.j] = true;
-      // });
+      socket.emit('start request chunks', {chunks: chunks, 'first_time': false});
+      alreadyExpanded = true;
     }
-    alreadyExpanded = true;
+  }
+  if (chunksLoaded.every(row => row.every(col => col))) {
+    clearInterval(requesting);
   }
 }
 
