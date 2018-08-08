@@ -158,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   socket.on('broadcast change pixels', data => {
+    console.log('got some pixel changes');
     for (let pixel_change of data.pixel_changes) {
       pixel.data[0] = pixel_change.color[0];
       pixel.data[1] = pixel_change.color[1];
