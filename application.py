@@ -52,7 +52,7 @@ def update_user_count():
   print('hi')
 
 update_user_count()
-set_interval(update_user_count, 900)
+# set_interval(update_user_count, 900)
 
 def user_count():
   return db.execute("SELECT * FROM users WHERE logged_in").rowcount
