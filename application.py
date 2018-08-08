@@ -84,6 +84,7 @@ def send_image(data):
 @socketio.on('change pixel')
 def change_pixel(data):
   global pixel_changes
+  global last_pixel_change_time
 
   x, y = int(data['x']), int(data['y'])
 

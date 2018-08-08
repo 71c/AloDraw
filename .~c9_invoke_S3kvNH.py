@@ -84,6 +84,7 @@ def send_image(data):
 @socketio.on('change pixel')
 def change_pixel(data):
   global pixel_changes
+  global last_pixel_change_time
 
   x, y = int(data['x']), int(data['y'])
 
@@ -144,7 +145,6 @@ def exit_tab():
 def give_dimensions():
   emit('give image dimensions', {'width': image.width, 'height': image.height, 'chunk_size': chunk_size})
   print('gave image dimensions')
-
 
 
 
