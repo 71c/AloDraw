@@ -191,15 +191,15 @@ function changeColor(x, y) {
     socket.emit('request chunks', {chunks: chunks, 'first_time': false});
     alreadyExpanded = false;
   } else if (! alreadyExpanded) {
-    // rect.x -= chunkSize;
-    // rect.y -= chunkSize;
-    // rect.width += chunkSize;
-    // rect.height += chunkSize;
-    // chunks = getImageChunks(rect);
-    // if (chunks.length > 0) {
-    //   socket.emit('request chunks', {chunks: chunks, 'first_time': false});
-    //   alreadyExpanded = true;
-    // }
+    rect.x -= chunkSize;
+    rect.y -= chunkSize;
+    rect.width += chunkSize;
+    rect.height += chunkSize;
+    chunks = getImageChunks(rect);
+    if (chunks.length > 0) {
+      socket.emit('request chunks', {chunks: chunks, 'first_time': false});
+      alreadyExpanded = true;
+    }
   }
 
   socket.emit('change pixel', {

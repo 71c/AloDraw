@@ -58,14 +58,33 @@ def update_user_count():
   db.commit()
   print('hi')
 
+def commit_pixel_changes():
+  global pixel_changes
+  global last_pixel_change_time
+  global counter
+  if len(pixel_changes) > 0:
+    print('wifjsojf')
+    emit('broadcast change pixels', {'pixel_changes': pixel_changes}, broadcast=True)
+    for change in pixel_changes:
+      image.putpixel((change['x'], change['y']), change['color'])
+    image.save(image_name)
+    pixel_changes = []
+    counter = 0
+
 update_user_count()
 set_interval(update_user_count, 900)
+
+commit_pixel_changes()
 
 def user_count():
   return db.execute("SELECT * FROM users WHERE logged_in").rowcount
 
 def send_user_count():
   emit('send user count', {'user_count': user_count()}, broadcast=True)
+
+
+
+
 
 @app.route('/')
 def index():
@@ -85,6 +104,7 @@ def send_image(data):
 def change_pixel(data):
   global pixel_changes
   global last_pixel_change_time
+  global counter
 
   x, y = int(data['x']), int(data['y'])
 
@@ -103,12 +123,8 @@ def change_pixel(data):
 
   last_pixel_change_time = time.time()
 
-  if counter == 0 or counter >= 20:
-    emit('broadcast change pixels', {'pixel_changes': pixel_changes}, broadcast=True)
-    for change in pixel_changes:
-      image.putpixel((change.x, change.y), change.color)
-    image.save(image_name)
-    pixel_changes = []
+  if counter == 0 or counter >= 10:
+    commit_pixel_changes()
 
   print((int(data['x']), int(data['y'])), color)
 
@@ -127,11 +143,15 @@ def record_enter_site(data):
   db.commit()
   send_user_count()
 
+  commit_pixel_changes()
+
 @socketio.on('exit site')
 def record_exit_site(data):
   db.execute("UPDATE users SET logged_in = FALSE WHERE id = :id", {'id': data['id']})
   db.commit()
   send_user_count()
+
+  commit_pixel_changes()
 
 @socketio.on('enter tab')
 def enter_tab():
