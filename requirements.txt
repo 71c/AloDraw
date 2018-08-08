@@ -10,3 +10,4 @@ Jinja2==2.10
 Pillow==5.1.0
 gevent-websocket==0.10.1
 requests==2.18.4
+psycopg2==2.7.5
