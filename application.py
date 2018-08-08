@@ -13,7 +13,7 @@ from PIL import Image
 
 width, height = 3000, 3000
 
-chunk_size = 256
+chunk_size = 512
 
 image_name = 'image11.png'
 
@@ -37,10 +37,21 @@ app.config["SESSION_TYPE"] = "filesystem"
 engine = create_engine(os.getenv("DATABASE_URL"))
 db = scoped_session(sessionmaker(bind=engine))
 
+def set_interval(func, sec):
+    def func_wrapper():
+        set_interval(func, sec)
+        func()
+    t = Timer(sec, func_wrapper)
+    t.start()
+    return t
+
 
 def update_user_count():
   db.execute("UPDATE users SET logged_in = FALSE WHERE 'now' - last_accessed_time > interval '00:15:00'")
   db.commit()
+
+update_user_count()
+set_interval(update_user_count, 900)
 
 def user_count():
   return db.execute("SELECT * FROM users WHERE logged_in").rowcount
