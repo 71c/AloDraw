@@ -101,15 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     data.chunks.forEach(function(chunk) {
-      chunksLoaded[chunk.i][chunk.j] = true;
-    });
-
-
-
-    data.chunks.forEach(function(chunk) {
-      var buffer = new Uint8ClampedArray(chunk.buffer);
-      idata.data.set(buffer);
-      ctx.putImageData(idata, chunk.rectangle[0], chunk.rectangle[1]);
+      if (! chunksLoaded[chunk.i][chunk.j]) {
+        chunksLoaded[chunk.i][chunk.j] = true;
+        var buffer = new Uint8ClampedArray(chunk.buffer);
+        idata.data.set(buffer);
+        ctx.putImageData(idata, chunk.rectangle[0], chunk.rectangle[1]);
+      }
     });
 
 
@@ -248,7 +245,6 @@ function getImageRectangle() {
 }
 
 function getImageChunks(rect) {
-  console.log('getting...');
   var x = Math.max(-rect.x, 0);
   var y = Math.max(-rect.y, 0);
   var pixelX = Math.floor(x / rect.width * width);
@@ -276,6 +272,5 @@ function getImageChunks(rect) {
       }
     }
   }
-  console.log('done');
   return chunks;
 }
