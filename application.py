@@ -17,7 +17,13 @@ width, height = 3000, 3000
 
 chunk_size = 512
 
+last_pixel_change_time = time.time()
+counter = 0
+pixel_changes = []
+
 image_name = 'image11.png'
+
+
 
 try:
   image = Image.open(image_name)
@@ -46,7 +52,6 @@ def set_interval(func, sec):
     t = Timer(sec, func_wrapper)
     t.start()
     return t
-
 
 def update_user_count():
   db.execute("UPDATE users SET logged_in = FALSE WHERE 'now' - last_accessed_time > interval '00:15:00'")
@@ -84,10 +89,23 @@ def change_pixel(data):
 
   color = tuple(map(int, re.findall('\d+', data['color'])))
 
-  emit('broadcast change pixel', {'color': color, 'index': pixel_index, 'x': x, 'y': y}, broadcast=True)
+  pixel_change = {'color': color, 'index': pixel_index, 'x': x, 'y': y}
 
-  image.putpixel((x, y), color)
-  image.save(image_name)
+  pixel_changes += [pixel_change]
+
+  if time.time() - last_pixel_change_time < 2:
+    counter += 1
+  else:
+    counter = 0
+
+  last_pixel_change_time = time.time()
+
+  if counter == 0 or counter >= 20:
+    emit('broadcast change pixels', {'pixel_changes': pixel_changes}, broadcast=True)
+    for change in pixel_changes:
+      image.putpixel((change.x, change.y), change.color)
+    image.save(image_name)
+    pixel_changes = []
 
   print((int(data['x']), int(data['y'])), color)
 

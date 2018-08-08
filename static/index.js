@@ -157,13 +157,13 @@ document.addEventListener('DOMContentLoaded', () => {
     table.append(row);
   }
 
-
-
-  socket.on('broadcast change pixel', data => {
-    pixel.data[0] = data.color[0];
-    pixel.data[1] = data.color[1];
-    pixel.data[2] = data.color[2];
-    ctx.putImageData(pixel, data.x, data.y);
+  socket.on('broadcast change pixels', data => {
+    for (let pixel_change of data.pixel_changes) {
+      pixel.data[0] = pixel_change.color[0];
+      pixel.data[1] = pixel_change.color[1];
+      pixel.data[2] = pixel_change.color[2];
+      ctx.putImageData(pixel, pixel_change.x, pixel_change.y);
+    }
   });
 
   socket.on('give new user id', data => {
