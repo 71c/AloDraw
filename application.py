@@ -23,7 +23,6 @@ pixel_changes = []
 
 image_name = 'image11.png'
 
-
 try:
   image = Image.open(image_name)
 except:

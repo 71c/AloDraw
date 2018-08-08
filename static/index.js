@@ -24,6 +24,8 @@ var alreadyExpanded = false;
 
 var requesting;
 
+var isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || (typeof safari !== 'undefined' && safari.pushNotification));
+
 var colors = [
   'rgb(255, 255, 255)',
   'rgb(228, 228, 228)',
@@ -45,6 +47,15 @@ var colors = [
 
 
 document.addEventListener('DOMContentLoaded', () => {
+
+  if (isSafari) {
+    var warning = document.createElement('div');
+    warning.setAttribute('class', 'alert alert-warning');
+    warning.setAttribute('role', 'alert');
+    warning.innerHTML = 'I can\'t get the pixels to not get blurry in Safari so would you please switch to another browser like Chrome or Firefox?';
+    document.body.prepend(warning);
+  }
+
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
   socket.emit('request image dimensions');
@@ -72,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.width = width;
     canvas.height = height;
 
-    canvas.style.position = 'absolute';
+
     document.body.append(canvas);
 
     socket.emit('request chunks', {chunks: getImageChunks(canvas.getBoundingClientRect()), 'first_time': true});
@@ -82,12 +93,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (data.first_time) {
       ctx = canvas.getContext('2d', { alpha: false });
       image.src = canvas.toDataURL();
-      idata = ctx.createImageData(chunkSize, chunkSize);
-      ctx.drawImage(image, 0, 0);
       pixel = ctx.createImageData(1, 1);
       pixel.data[3] = 255;
       requesting = setInterval(requestChunks, 1000);
+      idata = ctx.createImageData(chunkSize, chunkSize);
+      ctx.drawImage(image, 0, 0);
+
     }
+    // ctx.webkitImageSmoothingEnabled = false;
+    // ctx.msImageSmoothingEnabled = false;
+    // ctx.imageSmoothingEnabled = false;
 
     data.chunks.forEach(function(chunk) {
       var buffer = new Uint8ClampedArray(chunk.buffer);
@@ -233,7 +248,6 @@ function requestChunks() {
 }
 
 function getImageChunks(rect) {
-  console.time('someFunction');
   var x = Math.max(-rect.x, 0);
   var y = Math.max(-rect.y, 0);
   var pixelX = Math.floor(x / rect.width * width);
@@ -261,6 +275,5 @@ function getImageChunks(rect) {
       }
     }
   }
-  console.timeEnd('someFunction');
   return chunks;
 }
