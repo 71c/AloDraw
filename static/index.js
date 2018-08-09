@@ -2,14 +2,18 @@ var socket;
 
 var canvas = document.createElement('canvas');
 
+// drag vs click detection
+// https://stackoverflow.com/a/6042235
 var dragging = false;
+
+
 canvas.addEventListener("mousedown", function() {
   dragging = false;
 }, false);
+
 canvas.addEventListener("mousemove", function() {
   dragging = true;
 }, false);
-canvas.addEventListener("mouseup", placePixel, false);
 
 
 var ctx;
@@ -31,18 +35,7 @@ var idata;
 
 var alreadyExpanded = false;
 
-var requesting;
-
-// gives the browser that the user is using, or the userAgent if the browser is neither of these.
-var browser = function() {
-  return is.ie() ? 'IE' :
-    is.edge() ? 'Edge' :
-    is.opera() ? 'Opera' :
-    is.chrome() ? 'Chrome' :
-    is.firefox() ? 'Firefox' :
-    is.safari() ? 'Safari' :
-    navigator.userAgent;
-};
+var requesting = true;
 
 var colors = [
   'rgb(255, 255, 255)',
@@ -64,7 +57,6 @@ var colors = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
-  // window.history.pushState(null, null, '/test');
   if (is.safari()) {
     var warning = document.createElement('div');
     warning.setAttribute('class', 'alert alert-warning');
@@ -99,6 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.width = width;
     canvas.height = height;
+    // set initial coordinates. If they don't exist, it won't do it.
+    canvas.style.left = '-' + initialX + 'px';
+    canvas.style.top = '-' + initialY + 'px';
     document.body.append(canvas);
 
     socket.emit('request chunks', { chunks: getImageChunks(canvas.getBoundingClientRect()), 'first_time': true });
@@ -110,7 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
       image.src = canvas.toDataURL();
       pixel = ctx.createImageData(1, 1);
       pixel.data[3] = 255;
-      requesting = setInterval(requestChunks, 1000);
+
+      // whenever mouse goes up on canvas, place a pixel
+      canvas.addEventListener("mouseup", placePixel, false);
       idata = ctx.createImageData(chunkSize, chunkSize);
       ctx.drawImage(image, 0, 0);
     }
@@ -176,12 +173,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function placePixel(event) {
-  // if mouse is dragging canvas, don't place pixel
+  // if mouse is dragging canvas, don't place a pixel
   if (dragging) {
-    var r = getImageRectangle();
-    var x = r[0];
-    var y = r[1];
+    let r = getImageRectangle();
+    let x = r[0];
+    let y = r[1];
     window.history.pushState(null, null, '/' + x + ',' + y);
+    if (requesting)
+      requestChunks();
     return;
   }
 
@@ -189,13 +188,7 @@ function placePixel(event) {
   var x = Math.floor((event.clientX - rect.x) / rect.width * width);
   var y = Math.floor((event.clientY - rect.y) / rect.height * height);
 
-  var oldColor = ctx.getImageData(x, y, 1, 1).data.slice(0, 3);
   var newColor = currentColor.match(/\d+/g).map(s => parseInt(s, 10));
-
-  var sameColorAlreadyThere = oldColor.every((n, i) => n === newColor[i]);
-  // if the same color was already there don't place pixel
-  if (sameColorAlreadyThere)
-    return;
 
   for (var i = 0; i < 3; i++)
     pixel.data[i] = newColor[i];
@@ -254,7 +247,7 @@ function requestChunks() {
     }
   }
   if (chunksLoaded.every(row => row.every(col => col))) {
-    clearInterval(requesting);
+    requesting = false;
   }
 }
 

@@ -1,0 +1,23 @@
+td {
+  padding: 0px;
+}
+.row {
+  padding: 0.25rem 0rem;
+}
+canvas {
+  image-rendering: optimizeSpeed !important;            /* Older versions of FF          */
+  image-rendering: -moz-crisp-edges !important;          /* FF 6.0+                       */
+  image-rendering: -webkit-optimize-contrast !important; /* Safari                        */
+  image-rendering: -o-crisp-edges !important;            /* OS X & Windows Opera (12.02+) */
+  image-rendering: pixelated !important;                 /* Awesome future-browsers       */
+  -ms-interpolation-mode: nearest-neighbor !important;   /* IE                            */
+  position: absolute;
+}
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden
+}
+.alert {
+  margin-bottom: 0px;
+}

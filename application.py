@@ -88,6 +88,10 @@ def send_user_count():
 def index():
   return render_template('index.html')
 
+@app.route('/<int:x>,<int:y>')
+def go_to(x, y):
+  return render_template('index.html', x=x, y=y)
+
 @socketio.on('request chunks')
 def send_image(data):
   print('sending image...')
