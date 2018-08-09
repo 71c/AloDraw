@@ -8,6 +8,7 @@
   <!--I use this very helpful JavaScript thing that does pan and zoom https://github.com/anvaka/panzoom-->
   <script type="text/javascript" src="https://cdn.rawgit.com/anvaka/panzoom/v4.4.0/dist/panzoom.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='is.min.js') }}"></script>
   <script type="text/javascript" src="{{ url_for('static', filename='index.js') }}"></script>
 
   <style>
@@ -41,7 +42,7 @@
   <div class="container-fluid" style="z-index:10;position:absolute;background-color:lightgray;">
     <div class="row">
       <div class="col">
-        <h2>AlojDraw</h2>
+        <h2>AloDraw</h2>
       </div>
       <div class="col">
         <table id="colors"></table>

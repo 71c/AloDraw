@@ -24,7 +24,16 @@ var alreadyExpanded = false;
 
 var requesting;
 
-var isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || (typeof safari !== 'undefined' && safari.pushNotification));
+var browser = function() {
+  return is.ie() ? 'IE' :
+      is.edge() ? 'Edge' :
+      is.chrome() ? 'Chrome' :
+      is.firefox() ? 'Firefox' :
+      is.safari() ? 'Safari' :
+      is.opera() ? 'Opera' :
+      navigator.userAgent;
+};
+
 
 var colors = [
   'rgb(255, 255, 255)',
@@ -46,9 +55,9 @@ var colors = [
 ];
 
 
-document.addEventListener('DOMContentLoaded', () => {
 
-  if (isSafari) {
+document.addEventListener('DOMContentLoaded', () => {
+  if (is.safari()) {
     var warning = document.createElement('div');
     warning.setAttribute('class', 'alert alert-warning');
     warning.setAttribute('role', 'alert');

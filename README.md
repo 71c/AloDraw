@@ -1,4 +1,4 @@
-# finalproject
+# AlojDraw
 
 This is my final project.
 
