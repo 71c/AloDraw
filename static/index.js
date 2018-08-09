@@ -58,7 +58,7 @@ var colors = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
-  //
+  // I can't get the pixels to be crisp on Safari
   if (is.safari()) {
     var warning = document.createElement('div');
     warning.setAttribute('class', 'alert alert-warning');
@@ -102,15 +102,15 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.emit('request chunks', { chunks: getImageChunks(), 'first_time': true });
   });
 
+  // write pixels when server sends chunks
   socket.on('send chunks', data => {
+    // if this is the first time getting pixels, do this initialization here and below
     if (data.first_time) {
       ctx = canvas.getContext('2d', { alpha: false });
       image.src = canvas.toDataURL();
       pixel = ctx.createImageData(1, 1);
       pixel.data[3] = 255;
-
-      // whenever mouse goes up on canvas, place a pixel
-      canvas.addEventListener("mouseup", placePixel, false);
+      canvas.addEventListener("mouseup", handleCanvasMouseup, false);
       idata = ctx.createImageData(chunkSize, chunkSize);
       ctx.drawImage(image, 0, 0);
     }
@@ -121,10 +121,12 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.putImageData(idata, chunk.rectangle[0], chunk.rectangle[1]);
     });
 
+    // here too
     if (data.first_time) {
+      // make the canvas pannable and zoomable with this awesome plugin
       panzoom(canvas, {
         smoothScroll: false,
-        zoomDoubleClickSpeed: 1,
+        zoomDoubleClickSpeed: 1, // disable double-click
         minZoom: 1,
         maxZoom: 10
       });
@@ -174,24 +176,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-function placePixel(event) {
-  // if mouse is dragging canvas, don't place a pixel
+// when the mouse clicks on the canvas, do something depending on if it's dragging or not
+function handleCanvasMouseup(event) {
+  // if mouse is dragging canvas,
   if (dragging) {
     let r = getImageRectangle();
     let x = r[0];
     let y = r[1];
+    // change the URL to that of the position
     window.history.pushState(null, null, '/' + x + ',' + y);
+    // request chunks if not all chunks are loaded
     if (requesting)
       requestChunks();
     return;
   }
+  placePixel(event);
+}
 
+//
+function placePixel(event) {
+  // get x and y positions of the mouse relative to the canvas.
   var rect = this.getBoundingClientRect();
   var x = Math.floor((event.clientX - rect.x) / rect.width * width);
   var y = Math.floor((event.clientY - rect.y) / rect.height * height);
 
+  // the color of the new pixel
   var newColor = currentColor.match(/\d+/g).map(s => parseInt(s, 10));
 
+  // put this pixel on the canvas
   for (var i = 0; i < 3; i++)
     pixel.data[i] = newColor[i];
   ctx.putImageData(pixel, x, y);
@@ -204,6 +216,7 @@ function placePixel(event) {
   });
 }
 
+// get the rectangle of the viewing window relative to the image
 function getImageRectangle(rect = canvas.getBoundingClientRect()) {
   var x = Math.max(-rect.x, 0);
   var y = Math.max(-rect.y, 0);
@@ -231,7 +244,7 @@ function requestChunks() {
     alreadyExpanded = false;
   }
   // if all the chunks in the window are already loaded, request more chunks that are outside the window.
-  // I added this to try to make it speedier
+  // I added this to try to make the loading speedier and more seamless.
   else if (!alreadyExpanded) {
     rect.x -= chunkSize * 2;
     rect.y -= chunkSize * 2;
