@@ -157,3 +157,38 @@ def record_exit_site(data):
 @socketio.on('request image dimensions')
 def give_dimensions():
   emit('give image dimensions', {'width': image.width, 'height': image.height, 'chunk_size': chunk_size})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
