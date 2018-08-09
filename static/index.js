@@ -37,6 +37,7 @@ var alreadyExpanded = false;
 
 var requesting = true;
 
+// the colors to choose from
 var colors = [
   'rgb(255, 255, 255)',
   'rgb(228, 228, 228)',
@@ -57,6 +58,7 @@ var colors = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
+  //
   if (is.safari()) {
     var warning = document.createElement('div');
     warning.setAttribute('class', 'alert alert-warning');
@@ -77,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('user_count').innerHTML = data.user_count + ' online';
   });
 
+  // when it recieves the dimensions, set those and also initialize other things.
   socket.on('give image dimensions', data => {
     width = data.width;
     height = data.height;
@@ -96,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.style.top = '-' + initialY + 'px';
     document.body.append(canvas);
 
-    socket.emit('request chunks', { chunks: getImageChunks(canvas.getBoundingClientRect()), 'first_time': true });
+    socket.emit('request chunks', { chunks: getImageChunks(), 'first_time': true });
   });
 
   socket.on('send chunks', data => {
@@ -157,7 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   socket.on('broadcast change pixels', data => {
-    console.log('got some pixel changes');
     for (let pixel_change of data.pixel_changes) {
       pixel.data[0] = pixel_change.color[0];
       pixel.data[1] = pixel_change.color[1];
@@ -202,8 +204,7 @@ function placePixel(event) {
   });
 }
 
-function getImageRectangle() {
-  var rect = canvas.getBoundingClientRect();
+function getImageRectangle(rect = canvas.getBoundingClientRect()) {
   var x = Math.max(-rect.x, 0);
   var y = Math.max(-rect.y, 0);
   var pixelX = Math.floor(x / rect.width * width);
@@ -214,29 +215,28 @@ function getImageRectangle() {
   var pixelRight = Math.min(Math.floor(right / rect.width * width), width);
   var pixelBottom = Math.min(Math.floor(bottom / rect.height * height), height);
 
-  var minChunkX = Math.floor(pixelX / chunkSize) * chunkSize;
-  var minChunkY = Math.floor(pixelY / chunkSize) * chunkSize;
-  var maxChunkRight = Math.min(Math.ceil(pixelRight / chunkSize) * chunkSize, width);
-  var maxChunkBottom = Math.min(Math.ceil(pixelBottom / chunkSize) * chunkSize, height);
-
   return [pixelX, pixelY, pixelRight, pixelBottom];
 }
 
+// request chunks from the server
 function requestChunks() {
   var rect = canvas.getBoundingClientRect();
   var chunks = getImageChunks(rect);
   if (chunks.length > 0) {
     chunks.forEach(function(chunk) {
+      // set all the chunks that will be loaded to be loaded beforehand, to make sure they aren't loaded twice
       chunksLoaded[chunk.i][chunk.j] = true;
     });
     socket.emit('request chunks', { chunks: chunks, 'first_time': false });
     alreadyExpanded = false;
   }
+  // if all the chunks in the window are already loaded, request more chunks that are outside the window.
+  // I added this to try to make it speedier
   else if (!alreadyExpanded) {
-    rect.x -= chunkSize;
-    rect.y -= chunkSize;
-    rect.width += chunkSize;
-    rect.height += chunkSize;
+    rect.x -= chunkSize * 2;
+    rect.y -= chunkSize * 2;
+    rect.width += chunkSize * 2;
+    rect.height += chunkSize * 2;
     chunks = getImageChunks(rect);
     if (chunks.length > 0) {
       chunks.forEach(function(chunk) {
@@ -251,16 +251,13 @@ function requestChunks() {
   }
 }
 
-function getImageChunks(rect) {
-  var x = Math.max(-rect.x, 0);
-  var y = Math.max(-rect.y, 0);
-  var pixelX = Math.floor(x / rect.width * width);
-  var pixelY = Math.floor(y / rect.height * height);
-
-  var right = window.innerWidth - rect.x;
-  var bottom = window.innerHeight - rect.y;
-  var pixelRight = Math.min(Math.floor(right / rect.width * width), width);
-  var pixelBottom = Math.min(Math.floor(bottom / rect.height * height), height);
+// return the chunks contained in the given rectangle that aren't loaded yet
+function getImageChunks(rect = canvas.getBoundingClientRect()) {
+  var box = getImageRectangle(rect);
+  var pixelX = box[0];
+  var pixelY = box[1];
+  var pixelRight = box[2];
+  var pixelBottom = box[3];
 
   var minChunkX = Math.floor(pixelX / chunkSize) * chunkSize;
   var minChunkY = Math.floor(pixelY / chunkSize) * chunkSize;

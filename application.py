@@ -56,7 +56,6 @@ def set_interval(func, sec):
 def update_user_count():
   db.execute("UPDATE users SET logged_in = FALSE WHERE 'now' - last_accessed_time > interval '00:15:00'")
   db.commit()
-  print('hi')
 
 # broadcast and save changes to the image, then clear the changes and reset the counter
 def commit_pixel_changes():
@@ -92,15 +91,14 @@ def index():
 def go_to(x, y):
   return render_template('index.html', x=x, y=y)
 
+
 @socketio.on('request chunks')
 def send_image(data):
-  print('sending image...')
   chunks = []
   for chunk in data['chunks']:
     chunk['buffer'] = image.crop(chunk['rectangle']).tobytes()
     chunks += [chunk]
   emit('send chunks', {'chunks': chunks, 'first_time': data['first_time']})
-  print('sent image')
 
 # when a user places a pixel
 @socketio.on('change pixel')
