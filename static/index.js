@@ -200,7 +200,7 @@ function handleCanvasMouseup(event) {
 //
 function placePixel(event) {
   // get x and y positions of the mouse relative to the canvas.
-  var rect = this.getBoundingClientRect();
+  var rect = canvas.getBoundingClientRect();
   var x = Math.floor((event.clientX - rect.x) / rect.width * width);
   var y = Math.floor((event.clientY - rect.y) / rect.height * height);
 
