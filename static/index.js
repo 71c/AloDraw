@@ -7,15 +7,6 @@ var canvas = document.createElement('canvas');
 var dragging = false;
 
 
-canvas.addEventListener("mousedown", function() {
-  dragging = false;
-}, false);
-
-canvas.addEventListener("mousemove", function() {
-  dragging = true;
-}, false);
-
-
 var ctx;
 
 var image = new Image;
@@ -67,15 +58,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.prepend(warning);
   }
 
+  // connect to socket.io
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
   socket.emit('request image dimensions');
 
   window.onbeforeunload = function() {
+    // tell server that user exited the site right before the tab or window is closed
     socket.emit('exit site', { 'id': localStorage.getItem('id') });
   };
 
   socket.on('send user count', data => {
+    // update user count
     document.getElementById('user_count').innerHTML = data.user_count + ' online';
   });
 
@@ -106,13 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
   socket.on('send chunks', data => {
     // if this is the first time getting pixels, do this initialization here and below
     if (data.first_time) {
-      ctx = canvas.getContext('2d', { alpha: false });
-      image.src = canvas.toDataURL();
-      pixel = ctx.createImageData(1, 1);
-      pixel.data[3] = 255;
-      canvas.addEventListener("mouseup", handleCanvasMouseup, false);
-      idata = ctx.createImageData(chunkSize, chunkSize);
-      ctx.drawImage(image, 0, 0);
+      initialize();
     }
 
     data.chunks.forEach(function(chunk) {
@@ -120,26 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
       idata.data.set(buffer);
       ctx.putImageData(idata, chunk.rectangle[0], chunk.rectangle[1]);
     });
-
-    // here too
-    if (data.first_time) {
-      // make the canvas pannable and zoomable with this awesome plugin
-      panzoom(canvas, {
-        smoothScroll: false,
-        zoomDoubleClickSpeed: 1, // disable double-click
-        minZoom: 1,
-        maxZoom: 10
-      });
-
-      if (!localStorage.getItem('id')) {
-        socket.emit('request new user id');
-      }
-      else {
-        socket.emit('enter site', { 'id': localStorage.getItem('id') });
-      }
-    }
   });
 
+  // create the color swatch area
   var table = document.getElementById('colors');
   var i = 0;
   for (var y = 0; y < 2; y++) {
@@ -175,6 +146,39 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 });
+
+function initialize() {
+  ctx = canvas.getContext('2d', { alpha: false });
+  image.src = canvas.toDataURL();
+  pixel = ctx.createImageData(1, 1);
+  pixel.data[3] = 255;
+
+  canvas.addEventListener("mousedown", function() {
+    dragging = false;
+  }, false);
+  canvas.addEventListener("mousemove", function() {
+    dragging = true;
+  }, false);
+  canvas.addEventListener("mouseup", handleCanvasMouseup, false);
+
+  idata = ctx.createImageData(chunkSize, chunkSize);
+  ctx.drawImage(image, 0, 0);
+
+  // make the canvas pannable and zoomable with this awesome plugin
+  panzoom(canvas, {
+    smoothScroll: false,
+    zoomDoubleClickSpeed: 1, // disable double-click
+    minZoom: 1,
+    maxZoom: 10
+  });
+
+  if (!localStorage.getItem('id')) {
+    socket.emit('request new user id');
+  }
+  else {
+    socket.emit('enter site', { 'id': localStorage.getItem('id') });
+  }
+}
 
 // when the mouse clicks on the canvas, do something depending on if it's dragging or not
 function handleCanvasMouseup(event) {
@@ -246,10 +250,10 @@ function requestChunks() {
   // if all the chunks in the window are already loaded, request more chunks that are outside the window.
   // I added this to try to make the loading speedier and more seamless.
   else if (!alreadyExpanded) {
-    rect.x -= chunkSize * 2;
-    rect.y -= chunkSize * 2;
-    rect.width += chunkSize * 2;
-    rect.height += chunkSize * 2;
+    rect.x -= chunkSize;
+    rect.y -= chunkSize;
+    rect.width += chunkSize;
+    rect.height += chunkSize;
     chunks = getImageChunks(rect);
     if (chunks.length > 0) {
       chunks.forEach(function(chunk) {
