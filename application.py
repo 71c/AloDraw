@@ -141,7 +141,6 @@ def record_enter_site(data):
   db.execute("UPDATE users SET logged_in = TRUE, last_accessed_time = 'now' WHERE id = :id", {'id': data['id']})
   db.commit()
   send_user_count()
-
   commit_pixel_changes()
 
 # when a user exits the site, record that in the database and tell everyone
@@ -150,7 +149,6 @@ def record_exit_site(data):
   db.execute("UPDATE users SET logged_in = FALSE WHERE id = :id", {'id': data['id']})
   db.commit()
   send_user_count()
-
   commit_pixel_changes()
 
 # tell user width and height of the image, as well as the chunk size.

@@ -44,7 +44,6 @@ var browser = function() {
     navigator.userAgent;
 };
 
-
 var colors = [
   'rgb(255, 255, 255)',
   'rgb(228, 228, 228)',
@@ -64,9 +63,8 @@ var colors = [
   'rgb(130, 0, 128)',
 ];
 
-
-
 document.addEventListener('DOMContentLoaded', () => {
+  // window.history.pushState(null, null, '/test');
   if (is.safari()) {
     var warning = document.createElement('div');
     warning.setAttribute('class', 'alert alert-warning');
@@ -101,8 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.width = width;
     canvas.height = height;
-
-
     document.body.append(canvas);
 
     socket.emit('request chunks', { chunks: getImageChunks(canvas.getBoundingClientRect()), 'first_time': true });
@@ -142,8 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-
-
   var table = document.getElementById('colors');
   var i = 0;
   for (var y = 0; y < 2; y++) {
@@ -179,13 +173,17 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('id', data.id);
   });
 
-
 });
 
 function placePixel(event) {
   // if mouse is dragging canvas, don't place pixel
-  if (dragging)
+  if (dragging) {
+    var r = getImageRectangle();
+    var x = r[0];
+    var y = r[1];
+    window.history.pushState(null, null, '/' + x + ',' + y);
     return;
+  }
 
   var rect = this.getBoundingClientRect();
   var x = Math.floor((event.clientX - rect.x) / rect.width * width);
@@ -210,7 +208,6 @@ function placePixel(event) {
     'id': localStorage.getItem('id')
   });
 }
-
 
 function getImageRectangle() {
   var rect = canvas.getBoundingClientRect();
