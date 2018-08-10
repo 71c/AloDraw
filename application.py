@@ -26,7 +26,7 @@ image_name = 'image11.png'
 try:
   image = Image.open(image_name)
 except:
-  image = Image.new('RGBA', (width, height), color=(34, 34, 34, 255))
+  image = Image.new('RGBA', (width, height), color=(34, 34, 34))
   image.save(image_name)
 
 app = Flask(__name__)
