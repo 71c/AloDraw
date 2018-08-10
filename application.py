@@ -134,13 +134,13 @@ def create_new_user():
   insertion = db.execute("INSERT INTO users (creation_time, last_accessed_time, logged_in) VALUES ('now', 'now', TRUE) RETURNING id")
   db.commit()
   user_id = list(insertion)[0][0]
-  emit('give new user id', {'id': user_id})
+  emit('give new user id', {'user_id': user_id})
   send_user_count()
 
 # when an already identified user enters the site, record that in the database and tell everyone
 @socketio.on('enter site')
 def record_enter_site(data):
-  db.execute("UPDATE users SET logged_in = TRUE, last_accessed_time = 'now' WHERE id = :id", {'id': data['id']})
+  db.execute("UPDATE users SET logged_in = TRUE, last_accessed_time = 'now' WHERE id = :id", {'id': data['user_id']})
   db.commit()
   send_user_count()
   commit_pixel_changes()
@@ -148,7 +148,7 @@ def record_enter_site(data):
 # when a user exits the site, record that in the database and tell everyone
 @socketio.on('exit site')
 def record_exit_site(data):
-  db.execute("UPDATE users SET logged_in = FALSE WHERE id = :id", {'id': data['id']})
+  db.execute("UPDATE users SET logged_in = FALSE WHERE id = :id", {'user_id': data['user_id']})
   db.commit()
   send_user_count()
   commit_pixel_changes()

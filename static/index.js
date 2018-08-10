@@ -49,23 +49,14 @@ var colors = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
-  // I can't get the pixels to be crisp on Safari
-  if (is.safari()) {
-    var warning = document.createElement('div');
-    warning.setAttribute('class', 'alert alert-warning');
-    warning.setAttribute('role', 'alert');
-    warning.innerHTML = 'I can\'t get the pixels to not get blurry in Safari so would you please switch to another browser like Chrome or Firefox?';
-    document.body.prepend(warning);
-  }
+  showBrowserCompatibilityWarnings();
 
-  // connect to socket.io
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
   socket.emit('request image dimensions');
 
   window.onbeforeunload = function() {
-    // tell server that user exited the site right before the tab or window is closed
-    socket.emit('exit site', { 'id': localStorage.getItem('id') });
+    socket.emit('exit site', { user_id: localStorage.getItem('user_id') });
   };
 
   socket.on('send user count', data => {
@@ -90,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.height = height;
     document.body.append(canvas);
 
-    socket.emit('request chunks', { chunks: getImageChunks(), 'first_time': true });
+    socket.emit('request chunks', { chunks: getImageChunks(), first_time: true });
   });
 
   // write pixels when server sends chunks
@@ -138,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   socket.on('give new user id', data => {
-    localStorage.setItem('id', data.id);
+    localStorage.setItem('user_id', data.user_id);
   });
 
 });
@@ -172,11 +163,11 @@ function initialize() {
     maxZoom: 10
   });
 
-  if (!localStorage.getItem('id')) {
+  if (!localStorage.getItem('user_id')) {
     socket.emit('request new user id');
   }
   else {
-    socket.emit('enter site', { 'id': localStorage.getItem('id') });
+    socket.emit('enter site', { user_id: localStorage.getItem('user_id') });
   }
 }
 
@@ -213,10 +204,10 @@ function placePixel(event) {
   ctx.putImageData(pixel, x, y);
 
   socket.emit('change pixel', {
-    'color': newColor,
-    'x': x,
-    'y': y,
-    'id': localStorage.getItem('id')
+    color: newColor,
+    x: x,
+    y: y,
+    user_id: localStorage.getItem('user_id')
   });
 }
 
@@ -244,7 +235,7 @@ function requestChunks() {
       // set all the chunks that will be loaded to be loaded beforehand, to make sure they aren't loaded twice
       chunksLoaded[chunk.i][chunk.j] = true;
     });
-    socket.emit('request chunks', { chunks: chunks, 'first_time': false });
+    socket.emit('request chunks', { chunks: chunks, first_time: false });
     alreadyExpanded = false;
   }
   // if all the chunks in the window are already loaded, request more chunks that are outside the window.
@@ -259,7 +250,7 @@ function requestChunks() {
       chunks.forEach(function(chunk) {
         chunksLoaded[chunk.i][chunk.j] = true;
       });
-      socket.emit('request chunks', { chunks: chunks, 'first_time': false });
+      socket.emit('request chunks', { chunks: chunks, first_time: false });
       alreadyExpanded = true;
     }
   }
@@ -294,4 +285,34 @@ function getImageChunks(rect = canvas.getBoundingClientRect()) {
     }
   }
   return chunks;
+}
+
+function showBrowserCompatibilityWarnings() {
+  let warningsByBrowser = {
+    safari: 'I can\'t get the pixels to not get blurry in Safari so would you please switch to another browser like Chrome or Firefox?'
+  };
+  var message = warningsByBrowser[getUserBrowser()];
+  if (message) {
+    let warning = generateAlert(message);
+    document.body.prepend(warning);
+  }
+}
+
+function generateAlert(message) {
+  var warning = document.createElement('div');
+  warning.setAttribute('class', 'alert alert-warning');
+  warning.setAttribute('role', 'alert');
+  warning.innerHTML = message;
+  return warning;
+}
+
+function getUserBrowser() {
+  let browser = is.ie() ? 'internet explorer' :
+      is.edge() ? 'edge' :
+      is.opera() ? 'opera' :
+      is.chrome() ? 'chrome' :
+      is.firefox() ? 'firefox' :
+      is.safari() ? 'safari' :
+      navigator.userAgent;
+  return browser;
 }
