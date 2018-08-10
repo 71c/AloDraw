@@ -88,9 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.width = width;
     canvas.height = height;
-    // set initial coordinates. If they don't exist, it won't do it.
-    canvas.style.left = '-' + initialX + 'px';
-    canvas.style.top = '-' + initialY + 'px';
     document.body.append(canvas);
 
     socket.emit('request chunks', { chunks: getImageChunks(), 'first_time': true });
@@ -98,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // write pixels when server sends chunks
   socket.on('send chunks', data => {
-    // if this is the first time getting pixels, do this initialization here and below
     if (data.first_time) {
       initialize();
     }
@@ -163,6 +159,10 @@ function initialize() {
 
   idata = ctx.createImageData(chunkSize, chunkSize);
   ctx.drawImage(image, 0, 0);
+
+
+  canvas.style.left = '-' + initialX + 'px';
+  canvas.style.top = '-' + initialY + 'px';
 
   // make the canvas pannable and zoomable with this awesome plugin
   panzoom(canvas, {
