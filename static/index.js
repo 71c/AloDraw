@@ -1,28 +1,24 @@
 var socket;
 
-var canvas = document.createElement('canvas');
+
 
 // drag vs click detection
 // https://stackoverflow.com/a/6042235
 var dragging = false;
 
 
-var ctx;
+var context;
 
 var image = new Image;
 
-var width;
-var height;
 var chunkSize;
-var chunkRows;
-var chunkCols;
 var chunksLoaded;
 
-var pixel;
+var pixelHolder;
 
 var currentColor = 'rgb(34, 34, 34)';
 
-var idata;
+var chunkHolder;
 
 var alreadyExpanded = false;
 
@@ -48,83 +44,77 @@ var colors = [
   'rgb(130, 0, 128)',
 ];
 
+var user_id = localStorage.getItem('user_id');
+
 document.addEventListener('DOMContentLoaded', () => {
-  showBrowserCompatibilityWarnings();
+
+  var userCountElement = document.getElementById('user_count');
+  var canvas = document.getElementById('canvas');
+
+  renderBrowserCompatibilityWarnings();
 
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
   socket.emit('request image dimensions');
 
   window.onbeforeunload = function() {
-    socket.emit('exit site', { user_id: localStorage.getItem('user_id') });
+    socket.emit('exit site', { user_id: user_id });
   };
 
   socket.on('send user count', data => {
-    // update user count
-    document.getElementById('user_count').innerHTML = data.user_count + ' online';
+    userCountElement.innerHTML = data.user_count + ' online';
   });
 
   // when it recieves the dimensions, set those and also initialize other things.
   socket.on('give image dimensions', data => {
-    width = data.width;
-    height = data.height;
+
+    canvas.width = data.width;
+    canvas.height = data.height;
+    canvas.style.left = '-' + initialX + 'px';
+    canvas.style.top = '-' + initialY + 'px';
+    canvas.addEventListener("mousedown", function() {
+      dragging = false;
+    }, false);
+    canvas.addEventListener("mousemove", function() {
+      dragging = true;
+    }, false);
+    canvas.addEventListener("mouseup", handleCanvasMouseup, false);
 
     chunkSize = data.chunk_size;
-    chunkRows = Math.ceil(height / chunkSize);
-    chunkCols = Math.ceil(width / chunkSize);
-    chunksLoaded = Array(chunkRows);
-    for (var i = 0; i < chunkRows; i++) {
-      chunksLoaded[i] = Array(chunkCols).fill(false);
-    }
-
-    canvas.width = width;
-    canvas.height = height;
     document.body.append(canvas);
 
-    socket.emit('request chunks', { chunks: getImageChunks(), first_time: true });
+    let chunkRowCount = Math.ceil(canvas.height / chunkSize);
+    let chunkColCount = Math.ceil(canvas.width / chunkSize);
+    chunksLoaded = Array(chunkRowCount);
+    for (let i = 0; i < chunkRowCount; i++) {
+      chunksLoaded[i] = Array(chunkColCount).fill(false);
+    }
+
+    initialize();
+    socket.emit('request chunks', { chunks: getImageChunks()});
   });
 
   // write pixels when server sends chunks
   socket.on('send chunks', data => {
-    if (data.first_time) {
-      initialize();
-    }
-
     data.chunks.forEach(function(chunk) {
       var buffer = new Uint8ClampedArray(chunk.buffer);
-      idata.data.set(buffer);
-      ctx.putImageData(idata, chunk.rectangle[0], chunk.rectangle[1]);
+      chunkHolder.data.set(buffer);
+      context.putImageData(chunkHolder, chunk.rectangle[0], chunk.rectangle[1]);
     });
   });
 
   // create the color swatch area
-  var table = document.getElementById('colors');
-  var i = 0;
-  for (var y = 0; y < 2; y++) {
-    var row = document.createElement('tr');
-    for (var x = 0; x < 8; x++) {
-      var color = colors[i];
-      var swatch = document.createElement('div');
-      swatch.style.backgroundColor = color;
-      swatch.style.width = '20px';
-      swatch.style.height = '20px';
-      swatch.onclick = function() {
-        currentColor = this.style.backgroundColor;
-      };
-      var col = document.createElement('td');
-      col.append(swatch);
-      row.append(col);
-      i++;
-    }
-    table.append(row);
-  }
+  renderSwatches();
+
 
   socket.on('broadcast change pixels', data => {
     for (let pixel_change of data.pixel_changes) {
-      pixel.data[0] = pixel_change.color[0];
-      pixel.data[1] = pixel_change.color[1];
-      pixel.data[2] = pixel_change.color[2];
-      ctx.putImageData(pixel, pixel_change.x, pixel_change.y);
+      pixelHolder.data[0] = pixel_change.color[0];
+      pixelHolder.data[1] = pixel_change.color[1];
+      pixelHolder.data[2] = pixel_change.color[2];
+      // console.log(pixelHolder.data);
+      // pixelHolder.data = new Uint8ClampedArray(pixel_change.color);
+      context.putImageData(pixelHolder, pixel_change.x, pixel_change.y);
     }
   });
 
@@ -135,39 +125,28 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initialize() {
-  ctx = canvas.getContext('2d', { alpha: false });
+  context = canvas.getContext('2d', { alpha: false });
+
+  pixelHolder = context.createImageData(1, 1);
+  pixelHolder.data[3] = 255;
+
+  chunkHolder = context.createImageData(chunkSize, chunkSize);
+
   image.src = canvas.toDataURL();
-  pixel = ctx.createImageData(1, 1);
-  pixel.data[3] = 255;
+  context.drawImage(image, 0, 0);
 
-  canvas.addEventListener("mousedown", function() {
-    dragging = false;
-  }, false);
-  canvas.addEventListener("mousemove", function() {
-    dragging = true;
-  }, false);
-  canvas.addEventListener("mouseup", handleCanvasMouseup, false);
-
-  idata = ctx.createImageData(chunkSize, chunkSize);
-  ctx.drawImage(image, 0, 0);
-
-
-  canvas.style.left = '-' + initialX + 'px';
-  canvas.style.top = '-' + initialY + 'px';
-
-  // make the canvas pannable and zoomable with this awesome plugin
   panzoom(canvas, {
     smoothScroll: false,
-    zoomDoubleClickSpeed: 1, // disable double-click
+    zoomDoubleClickSpeed: 1,
     minZoom: 1,
     maxZoom: 10
   });
 
-  if (!localStorage.getItem('user_id')) {
+  if (!user_id) {
     socket.emit('request new user id');
   }
   else {
-    socket.emit('enter site', { user_id: localStorage.getItem('user_id') });
+    socket.emit('enter site', { user_id: user_id });
   }
 }
 
@@ -192,22 +171,22 @@ function handleCanvasMouseup(event) {
 function placePixel(event) {
   // get x and y positions of the mouse relative to the canvas.
   var rect = canvas.getBoundingClientRect();
-  var x = Math.floor((event.clientX - rect.x) / rect.width * width);
-  var y = Math.floor((event.clientY - rect.y) / rect.height * height);
+  var x = Math.floor((event.clientX - rect.x) / rect.width * canvas.width);
+  var y = Math.floor((event.clientY - rect.y) / rect.height * canvas.height);
 
   // the color of the new pixel
   var newColor = currentColor.match(/\d+/g).map(s => parseInt(s, 10));
 
   // put this pixel on the canvas
   for (var i = 0; i < 3; i++)
-    pixel.data[i] = newColor[i];
-  ctx.putImageData(pixel, x, y);
+    pixelHolder.data[i] = newColor[i];
+  context.putImageData(pixelHolder, x, y);
 
   socket.emit('change pixel', {
     color: newColor,
     x: x,
     y: y,
-    user_id: localStorage.getItem('user_id')
+    user_id: user_id
   });
 }
 
@@ -215,13 +194,13 @@ function placePixel(event) {
 function getImageRectangle(rect = canvas.getBoundingClientRect()) {
   var x = Math.max(-rect.x, 0);
   var y = Math.max(-rect.y, 0);
-  var pixelX = Math.floor(x / rect.width * width);
-  var pixelY = Math.floor(y / rect.height * height);
+  var pixelX = Math.floor(x / rect.width * canvas.width);
+  var pixelY = Math.floor(y / rect.height * canvas.height);
 
   var right = window.innerWidth - rect.x;
   var bottom = window.innerHeight - rect.y;
-  var pixelRight = Math.min(Math.floor(right / rect.width * width), width);
-  var pixelBottom = Math.min(Math.floor(bottom / rect.height * height), height);
+  var pixelRight = Math.min(Math.floor(right / rect.width * canvas.width), canvas.width);
+  var pixelBottom = Math.min(Math.floor(bottom / rect.height * canvas.height), canvas.height);
 
   return [pixelX, pixelY, pixelRight, pixelBottom];
 }
@@ -235,7 +214,7 @@ function requestChunks() {
       // set all the chunks that will be loaded to be loaded beforehand, to make sure they aren't loaded twice
       chunksLoaded[chunk.i][chunk.j] = true;
     });
-    socket.emit('request chunks', { chunks: chunks, first_time: false });
+    socket.emit('request chunks', { chunks: chunks});
     alreadyExpanded = false;
   }
   // if all the chunks in the window are already loaded, request more chunks that are outside the window.
@@ -250,7 +229,7 @@ function requestChunks() {
       chunks.forEach(function(chunk) {
         chunksLoaded[chunk.i][chunk.j] = true;
       });
-      socket.emit('request chunks', { chunks: chunks, first_time: false });
+      socket.emit('request chunks', { chunks: chunks });
       alreadyExpanded = true;
     }
   }
@@ -269,15 +248,15 @@ function getImageChunks(rect = canvas.getBoundingClientRect()) {
 
   var minChunkX = Math.floor(pixelX / chunkSize) * chunkSize;
   var minChunkY = Math.floor(pixelY / chunkSize) * chunkSize;
-  var maxChunkRight = Math.min(Math.ceil(pixelRight / chunkSize) * chunkSize, width);
-  var maxChunkBottom = Math.min(Math.ceil(pixelBottom / chunkSize) * chunkSize, height);
+  var maxChunkRight = Math.min(Math.ceil(pixelRight / chunkSize) * chunkSize, canvas.width);
+  var maxChunkBottom = Math.min(Math.ceil(pixelBottom / chunkSize) * chunkSize, canvas.height);
 
   var chunks = [];
   for (var row = minChunkY; row < maxChunkBottom; row += chunkSize) {
     for (var col = minChunkX; col < maxChunkRight; col += chunkSize) {
       if (!chunksLoaded[row / chunkSize][col / chunkSize]) {
         chunks.push({
-          rectangle: [col, row, Math.min(col + chunkSize, width), Math.min(row + chunkSize, height)],
+          rectangle: [col, row, Math.min(col + chunkSize, canvas.width), Math.min(row + chunkSize, canvas.height)],
           i: row / chunkSize,
           j: col / chunkSize
         });
@@ -287,18 +266,41 @@ function getImageChunks(rect = canvas.getBoundingClientRect()) {
   return chunks;
 }
 
-function showBrowserCompatibilityWarnings() {
+function renderBrowserCompatibilityWarnings() {
   let warningsByBrowser = {
     safari: 'I can\'t get the pixels to not get blurry in Safari so would you please switch to another browser like Chrome or Firefox?'
   };
   var message = warningsByBrowser[getUserBrowser()];
   if (message) {
-    let warning = generateAlert(message);
+    let warning = createAlert(message);
     document.body.prepend(warning);
   }
 }
 
-function generateAlert(message) {
+function renderSwatches() {
+  var table = document.getElementById('colors');
+  var i = 0;
+  for (var y = 0; y < 2; y++) {
+    var row = document.createElement('tr');
+    for (var x = 0; x < 8; x++) {
+      var color = colors[i];
+      var swatch = document.createElement('div');
+      swatch.style.backgroundColor = color;
+      swatch.style.width = '20px';
+      swatch.style.height = '20px';
+      swatch.onclick = function() {
+        currentColor = this.style.backgroundColor;
+      };
+      var col = document.createElement('td');
+      col.append(swatch);
+      row.append(col);
+      i++;
+    }
+    table.append(row);
+  }
+}
+
+function createAlert(message) {
   var warning = document.createElement('div');
   warning.setAttribute('class', 'alert alert-warning');
   warning.setAttribute('role', 'alert');

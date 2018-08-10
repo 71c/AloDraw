@@ -98,7 +98,7 @@ def send_image(data):
   for chunk in data['chunks']:
     chunk['buffer'] = image.crop(chunk['rectangle']).tobytes()
     chunks += [chunk]
-  emit('send chunks', {'chunks': chunks, 'first_time': data['first_time']})
+  emit('send chunks', {'chunks': chunks})
 
 # when a user places a pixel
 @socketio.on('change pixel')
@@ -148,7 +148,7 @@ def record_enter_site(data):
 # when a user exits the site, record that in the database and tell everyone
 @socketio.on('exit site')
 def record_exit_site(data):
-  db.execute("UPDATE users SET logged_in = FALSE WHERE id = :id", {'user_id': data['user_id']})
+  db.execute("UPDATE users SET logged_in = FALSE WHERE id = :id", {'id': data['user_id']})
   db.commit()
   send_user_count()
   commit_pixel_changes()
