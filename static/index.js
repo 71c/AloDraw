@@ -43,7 +43,7 @@ var user_id = localStorage.getItem('user_id');
 
 document.addEventListener('DOMContentLoaded', () => {
   renderSwatches();
-  renderBrowserCompatibilityWarnings();
+  renderSafariCompatibilityAlert();
   var userCountElement = document.getElementById('user_count');
 
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
@@ -200,12 +200,9 @@ function quantizeToChunkCeil(number) {
   return Math.ceil(number / chunkSize) * chunkSize;
 }
 
-function renderBrowserCompatibilityWarnings() {
-  let warningsByBrowser = {
-    safari: 'I can\'t get the pixels to not get blurry in Safari so would you please switch to another browser like Chrome or Firefox?'
-  };
-  var message = warningsByBrowser[getUserBrowser()];
-  if (message) {
+function renderSafariCompatibilityAlert() {
+  if (is.safari()) {
+    let message = 'I can\'t get the pixels to not get blurry in Safari so would you please switch to another browser like Chrome or Firefox?';
     let warning = createAlert(message);
     document.body.prepend(warning);
   }
@@ -237,17 +234,6 @@ function createAlert(message) {
   warning.setAttribute('role', 'alert');
   warning.innerHTML = message;
   return warning;
-}
-
-function getUserBrowser() {
-  let browser = is.ie() ? 'internet explorer' :
-      is.edge() ? 'edge' :
-      is.opera() ? 'opera' :
-      is.chrome() ? 'chrome' :
-      is.firefox() ? 'firefox' :
-      is.safari() ? 'safari' :
-      navigator.userAgent;
-  return browser;
 }
 
 function createFilled2dArray(rowCount, colCount, val) {
