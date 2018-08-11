@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCanvas(initialX, initialY);
     setCanvasImage();
     setChunksLoaded();
-    socket.emit('request chunks', { chunks: getVisibleUnloadedChunks()});
+    socket.emit('request chunks', { chunks: getVisibleUnloadedChunks() });
   });
 
   socket.on('send chunks', data => {
@@ -104,7 +104,8 @@ function handleCanvasMouseup(event) {
     updateUrl();
     if (!allChunksAreLoaded)
       requestChunks();
-  } else {
+  }
+  else {
     placePixel(event);
   }
 }
@@ -115,15 +116,12 @@ function updateUrl() {
 }
 
 function placePixel(event) {
-  // get x and y positions of the mouse relative to the canvas.
   var rect = canvas.getBoundingClientRect();
   var x = Math.floor((event.clientX - rect.x) / rect.width * width);
   var y = Math.floor((event.clientY - rect.y) / rect.height * height);
 
-  // the color of the new pixel
   var newColor = currentColor.match(/\d+/g).map(s => parseInt(s, 10));
 
-  // put this pixel on the canvas
   let pixelHolder = canvasContext.createImageData(1, 1);
   for (var i = 0; i < 3; i++)
     pixelHolder.data[i] = newColor[i];
@@ -163,13 +161,13 @@ function requestChunks() {
     chunks.forEach(function(chunk) {
       chunkLoadingStatusTable[chunk.i][chunk.j] = true;
     });
-    socket.emit('request chunks', {chunks: chunks});
+    socket.emit('request chunks', { chunks: chunks });
   }
   if (chunkLoadingStatusTable.every(row => row.every(col => col)))
     allChunksAreLoaded = true;
 }
 
-function getVisibleUnloadedChunks(rect=canvas.getBoundingClientRect()) {
+function getVisibleUnloadedChunks(rect = canvas.getBoundingClientRect()) {
   let imageRect = getImageRectangle(rect);
 
   let left = quantizeToChunkFloor(imageRect.left);
