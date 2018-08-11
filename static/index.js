@@ -1,11 +1,7 @@
 let socket;
 
-// drag vs click detection
-// https://stackoverflow.com/a/6042235
-let mouseIsDragging = false;
-
+let canvas;
 let canvasContext;
-
 let image = new Image();
 
 let chunkSize;
@@ -13,13 +9,13 @@ let width;
 let height;
 
 let chunkLoadingStatusTable;
-
 let allChunksAreLoaded = false;
 
-let canvas;
+// drag vs click detection
+// https://stackoverflow.com/a/6042235
+let mouseIsDragging = false;
 
 let currentColor = 'rgb(34, 34, 34)';
-
 const colors = [
   'rgb(255, 255, 255)',
   'rgb(228, 228, 228)',
@@ -46,8 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderSafariCompatibilityAlert();
   const userCountElement = document.getElementById('user_count');
 
-  let url = `${location.protocol}//${document.domain}:${location.port}`;
-  socket = io.connect(url);
+  socket = io.connect(`${location.protocol}//${document.domain}:${location.port}`);
 
   socket.emit('request image dimensions');
 
@@ -102,6 +97,69 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+function renderSwatches() {
+  let table = document.getElementById('colors');
+  let cols = 8;
+  let row;
+  colors.forEach((color, index) => {
+    if (index % cols === 0) {
+      row = document.createElement('tr');
+      table.append(row);
+    }
+    let swatch = document.createElement('td');
+    row.append(swatch);
+    swatch.style.backgroundColor = color;
+    swatch.style.width = '20px';
+    swatch.style.height = '20px';
+    swatch.onclick = function() {
+      currentColor = this.style.backgroundColor;
+    };
+  });
+}
+
+function renderSafariCompatibilityAlert() {
+  if (is.safari()) {
+    let message = `I can't get the pixels to not get blurry in Safari so would you please switch to another browser like Chrome or Firefox?`;
+    let warning = createAlert(message);
+    document.body.prepend(warning);
+  }
+}
+
+function createAlert(message) {
+  let warning = document.createElement('div');
+  warning.setAttribute('class', 'alert alert-warning');
+  warning.setAttribute('role', 'alert');
+  warning.innerHTML = message;
+  return warning;
+}
+
+function renderCanvas(x, y) {
+  canvas = createCanvas();
+  canvas.style.left = `-${x}px`;
+  canvas.style.top = `-${y}px`;
+  document.body.append(canvas);
+  panzoom(canvas, {
+    smoothScroll: false,
+    zoomDoubleClickSpeed: 1,
+    minZoom: 1,
+    maxZoom: 10
+  });
+}
+
+function createCanvas() {
+  let canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.addEventListener("mousedown", function() {
+    mouseIsDragging = false;
+  }, false);
+  canvas.addEventListener("mousemove", function() {
+    mouseIsDragging = true;
+  }, false);
+  canvas.addEventListener("mouseup", handleCanvasMouseup, false);
+  return canvas;
+}
+
 function handleCanvasMouseup(event) {
   if (mouseIsDragging) {
     updateUrl();
@@ -117,48 +175,6 @@ function handleCanvasMouseup(event) {
 function updateUrl() {
   let imageRect = getImageRectangle();
   window.history.pushState(null, null, `/${imageRect.left},${imageRect.top}`);
-}
-
-function placePixel(event) {
-  let rect = canvas.getBoundingClientRect();
-  let x = Math.floor((event.clientX - rect.x) / rect.width * width);
-  let y = Math.floor((event.clientY - rect.y) / rect.height * height);
-
-  let newColor = currentColor.match(/\d+/g).map(s => parseInt(s, 10));
-  // fully opaque
-  newColor.push(255);
-
-  let pixelHolder = canvasContext.createImageData(1, 1);
-  for (let i = 0; i < 4; i++)
-    pixelHolder.data[i] = newColor[i];
-  canvasContext.putImageData(pixelHolder, x, y);
-
-  socket.emit('change pixel', {
-    color: newColor,
-    x: x,
-    y: y,
-    user_id: user_id
-  });
-}
-
-// get the rectangle of the viewing window relative to the image
-function getImageRectangle(rect = canvas.getBoundingClientRect()) {
-  let x = Math.max(-rect.x, 0);
-  let y = Math.max(-rect.y, 0);
-  let pixelX = Math.floor(x / rect.width * width);
-  let pixelY = Math.floor(y / rect.height * height);
-
-  let right = window.innerWidth - rect.x;
-  let bottom = window.innerHeight - rect.y;
-  let pixelRight = Math.min(Math.floor(right / rect.width * width), width);
-  let pixelBottom = Math.min(Math.floor(bottom / rect.height * height), height);
-
-  return {
-    left: pixelX,
-    top: pixelY,
-    right: pixelRight,
-    bottom: pixelBottom
-  };
 }
 
 function requestChunks() {
@@ -205,74 +221,45 @@ function quantizeToChunkCeil(number) {
   return Math.ceil(number / chunkSize) * chunkSize;
 }
 
-function renderSafariCompatibilityAlert() {
-  if (is.safari()) {
-    let message = `I can't get the pixels to not get blurry in Safari so would you please switch to another browser like Chrome or Firefox?`;
-    let warning = createAlert(message);
-    document.body.prepend(warning);
-  }
+// get the rectangle of the viewing window relative to the image
+function getImageRectangle(rect = canvas.getBoundingClientRect()) {
+  let x = Math.max(-rect.x, 0);
+  let y = Math.max(-rect.y, 0);
+  let pixelX = Math.floor(x / rect.width * width);
+  let pixelY = Math.floor(y / rect.height * height);
+
+  let right = window.innerWidth - rect.x;
+  let bottom = window.innerHeight - rect.y;
+  let pixelRight = Math.min(Math.floor(right / rect.width * width), width);
+  let pixelBottom = Math.min(Math.floor(bottom / rect.height * height), height);
+
+  return {
+    left: pixelX,
+    top: pixelY,
+    right: pixelRight,
+    bottom: pixelBottom
+  };
 }
 
-function renderSwatches() {
-  let table = document.getElementById('colors');
-  let cols = 8;
-  let row;
-  colors.forEach((color, index) => {
-    if (index % cols === 0) {
-      row = document.createElement('tr');
-      table.append(row);
-    }
-    let swatch = document.createElement('td');
-    row.append(swatch);
-    swatch.style.backgroundColor = color;
-    swatch.style.width = '20px';
-    swatch.style.height = '20px';
-    swatch.onclick = function() {
-      currentColor = this.style.backgroundColor;
-    };
-  });
-}
+function placePixel(event) {
+  let rect = canvas.getBoundingClientRect();
+  let x = Math.floor((event.clientX - rect.x) / rect.width * width);
+  let y = Math.floor((event.clientY - rect.y) / rect.height * height);
 
-function createAlert(message) {
-  let warning = document.createElement('div');
-  warning.setAttribute('class', 'alert alert-warning');
-  warning.setAttribute('role', 'alert');
-  warning.innerHTML = message;
-  return warning;
-}
+  let newColor = currentColor.match(/\d+/g).map(s => parseInt(s, 10));
+  // fully opaque
+  newColor.push(255);
 
-function createFilled2dArray(rowCount, colCount, val) {
-  let arr = Array(rowCount);
-  for (let i = 0; i < rowCount; i++) {
-    arr[i] = Array(colCount).fill(val);
-  }
-  return arr;
-}
+  let pixelHolder = canvasContext.createImageData(1, 1);
+  for (let i = 0; i < 4; i++)
+    pixelHolder.data[i] = newColor[i];
+  canvasContext.putImageData(pixelHolder, x, y);
 
-function createCanvas() {
-  let canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  canvas.addEventListener("mousedown", function() {
-    mouseIsDragging = false;
-  }, false);
-  canvas.addEventListener("mousemove", function() {
-    mouseIsDragging = true;
-  }, false);
-  canvas.addEventListener("mouseup", handleCanvasMouseup, false);
-  return canvas;
-}
-
-function renderCanvas(x, y) {
-  canvas = createCanvas();
-  canvas.style.left = `-${x}px`;
-  canvas.style.top = `-${y}px`;
-  document.body.append(canvas);
-  panzoom(canvas, {
-    smoothScroll: false,
-    zoomDoubleClickSpeed: 1,
-    minZoom: 1,
-    maxZoom: 10
+  socket.emit('change pixel', {
+    color: newColor,
+    x: x,
+    y: y,
+    user_id: user_id
   });
 }
 
@@ -286,4 +273,12 @@ function setChunksLoaded() {
   let rowCount = Math.ceil(height / chunkSize);
   let colCount = Math.ceil(width / chunkSize);
   chunkLoadingStatusTable = createFilled2dArray(rowCount, colCount, false);
+}
+
+function createFilled2dArray(rowCount, colCount, val) {
+  let arr = Array(rowCount);
+  for (let i = 0; i < rowCount; i++) {
+    arr[i] = Array(colCount).fill(val);
+  }
+  return arr;
 }
