@@ -39,17 +39,18 @@ const colors = [
   'rgb(130, 0, 128)'
 ];
 
-var user_id = localStorage.getItem('user_id');
+let user_id = localStorage.getItem('user_id');
 
 document.addEventListener('DOMContentLoaded', function() {
   renderSwatches();
   renderSafariCompatibilityAlert();
-  var userCountElement = document.getElementById('user_count');
+  const userCountElement = document.getElementById('user_count');
 
   let url = `${location.protocol}//${document.domain}:${location.port}`;
   socket = io.connect(url);
 
   socket.emit('request image dimensions');
+
   if (!user_id) {
     socket.emit('request new user id');
   }
@@ -96,7 +97,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   socket.on('give new user id', data => {
-    localStorage.setItem('user_id', data.user_id);
+    user_id = data.user_id;
+    localStorage.setItem('user_id', user_id);
   });
 });
 
@@ -123,9 +125,11 @@ function placePixel(event) {
   let y = Math.floor((event.clientY - rect.y) / rect.height * height);
 
   let newColor = currentColor.match(/\d+/g).map(s => parseInt(s, 10));
+  // fully opaque
+  newColor.push(255);
 
   let pixelHolder = canvasContext.createImageData(1, 1);
-  for (let i = 0; i < 3; i++)
+  for (let i = 0; i < 4; i++)
     pixelHolder.data[i] = newColor[i];
   canvasContext.putImageData(pixelHolder, x, y);
 
