@@ -40,11 +40,14 @@ let user_id = localStorage.getItem('user_id');
 document.addEventListener('DOMContentLoaded', function() {
   renderSwatches();
   renderSafariCompatibilityAlert();
+  renderCanvas(initialX, initialY);
+
   const userCountElement = document.getElementById('user_count');
 
   socket = io.connect(`${location.protocol}//${document.domain}:${location.port}`);
 
   socket.emit('request image dimensions');
+
 
   if (!user_id) {
     socket.emit('request new user id', {'browser': getUserBrowser(), 'user_agent': navigator.userAgent});
@@ -65,15 +68,16 @@ document.addEventListener('DOMContentLoaded', function() {
     chunkSize = data.chunk_size;
     width = data.width;
     height = data.height;
-    renderCanvas(initialX, initialY);
-    setCanvasImage();
+    canvas.width = width;
+    canvas.height = height;
+    canvasContext = canvas.getContext('2d', { alpha: false });
     setChunksLoaded();
-    socket.emit('request chunks', { chunks: getVisibleUnloadedChunks() });
+    requestChunks();
   });
 
   socket.on('send chunks', data => {
+    let chunkHolder = canvasContext.createImageData(chunkSize, chunkSize);
     data.chunks.forEach(function(chunk) {
-      let chunkHolder = canvasContext.createImageData(chunkSize, chunkSize);
       let buffer = new Uint8ClampedArray(chunk.buffer);
       chunkHolder.data.set(buffer);
       canvasContext.putImageData(chunkHolder, chunk.rectangle[0], chunk.rectangle[1]);
@@ -144,7 +148,6 @@ function getUserBrowser() {
   return browser;
 }
 
-
 function renderCanvas(x, y) {
   canvas = createCanvas();
   canvas.style.left = `-${x}px`;
@@ -160,8 +163,6 @@ function renderCanvas(x, y) {
 
 function createCanvas() {
   let canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
   canvas.addEventListener("mousedown", function() {
     mouseIsDragging = false;
   }, false);
@@ -275,12 +276,6 @@ function placePixel(event) {
   });
 }
 
-function setCanvasImage() {
-  canvasContext = canvas.getContext('2d', { alpha: false });
-  image.src = canvas.toDataURL();
-  canvasContext.drawImage(image, 0, 0);
-}
-
 function setChunksLoaded() {
   let rowCount = Math.ceil(height / chunkSize);
   let colCount = Math.ceil(width / chunkSize);
@@ -294,4 +289,3 @@ function createFilled2dArray(rowCount, colCount, val) {
   }
   return arr;
 }
-
