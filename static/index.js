@@ -1,26 +1,26 @@
-var socket;
+let socket;
 
 // drag vs click detection
 // https://stackoverflow.com/a/6042235
-var mouseIsDragging = false;
+let mouseIsDragging = false;
 
-var canvasContext;
+let canvasContext;
 
-var image = new Image();
+let image = new Image();
 
-var chunkSize;
-var width;
-var height;
+let chunkSize;
+let width;
+let height;
 
-var chunkLoadingStatusTable;
+let chunkLoadingStatusTable;
 
-var currentColor = 'rgb(34, 34, 34)';
+let allChunksAreLoaded = false;
 
-var allChunksAreLoaded = false;
+let canvas;
 
-var canvas;
+let currentColor = 'rgb(34, 34, 34)';
 
-var colors = [
+const colors = [
   'rgb(255, 255, 255)',
   'rgb(228, 228, 228)',
   'rgb(136, 136, 136)',
@@ -41,7 +41,7 @@ var colors = [
 
 var user_id = localStorage.getItem('user_id');
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
   renderSwatches();
   renderSafariCompatibilityAlert();
   var userCountElement = document.getElementById('user_count');
@@ -103,8 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function handleCanvasMouseup(event) {
   if (mouseIsDragging) {
     updateUrl();
-    if (!allChunksAreLoaded)
+    if (!allChunksAreLoaded) {
       requestChunks();
+    }
   }
   else {
     placePixel(event);
@@ -164,8 +165,9 @@ function requestChunks() {
     });
     socket.emit('request chunks', { chunks: chunks });
   }
-  if (chunkLoadingStatusTable.every(row => row.every(col => col)))
+  if (chunkLoadingStatusTable.every(row => row.every(col => col))) {
     allChunksAreLoaded = true;
+  }
 }
 
 function getVisibleUnloadedChunks(rect = canvas.getBoundingClientRect()) {
