@@ -6,7 +6,7 @@ var mouseIsDragging = false;
 
 var canvasContext;
 
-var image = new Image;
+var image = new Image();
 
 var chunkSize;
 var width;
@@ -36,7 +36,7 @@ var colors = [
   'rgb(0, 131, 199)',
   'rgb(0, 0, 234)',
   'rgb(207, 110, 228)',
-  'rgb(130, 0, 128)',
+  'rgb(130, 0, 128)'
 ];
 
 var user_id = localStorage.getItem('user_id');
@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSafariCompatibilityAlert();
   var userCountElement = document.getElementById('user_count');
 
-  socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+  let url = `${location.protocol}//${document.domain}:${location.port}`;
+  socket = io.connect(url);
 
   socket.emit('request image dimensions');
   if (!user_id) {
@@ -61,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   socket.on('send user count', data => {
-    userCountElement.innerHTML = data.user_count + ' online';
+    userCountElement.innerHTML = `${data.user_count} online`;
   });
 
   socket.on('give image dimensions', data => {
@@ -112,18 +113,18 @@ function handleCanvasMouseup(event) {
 
 function updateUrl() {
   let imageRect = getImageRectangle();
-  window.history.pushState(null, null, '/' + imageRect.left + ',' + imageRect.top);
+  window.history.pushState(null, null, `/${imageRect.left},${imageRect.top}`);
 }
 
 function placePixel(event) {
-  var rect = canvas.getBoundingClientRect();
-  var x = Math.floor((event.clientX - rect.x) / rect.width * width);
-  var y = Math.floor((event.clientY - rect.y) / rect.height * height);
+  let rect = canvas.getBoundingClientRect();
+  let x = Math.floor((event.clientX - rect.x) / rect.width * width);
+  let y = Math.floor((event.clientY - rect.y) / rect.height * height);
 
-  var newColor = currentColor.match(/\d+/g).map(s => parseInt(s, 10));
+  let newColor = currentColor.match(/\d+/g).map(s => parseInt(s, 10));
 
   let pixelHolder = canvasContext.createImageData(1, 1);
-  for (var i = 0; i < 3; i++)
+  for (let i = 0; i < 3; i++)
     pixelHolder.data[i] = newColor[i];
   canvasContext.putImageData(pixelHolder, x, y);
 
@@ -137,15 +138,15 @@ function placePixel(event) {
 
 // get the rectangle of the viewing window relative to the image
 function getImageRectangle(rect = canvas.getBoundingClientRect()) {
-  var x = Math.max(-rect.x, 0);
-  var y = Math.max(-rect.y, 0);
-  var pixelX = Math.floor(x / rect.width * width);
-  var pixelY = Math.floor(y / rect.height * height);
+  let x = Math.max(-rect.x, 0);
+  let y = Math.max(-rect.y, 0);
+  let pixelX = Math.floor(x / rect.width * width);
+  let pixelY = Math.floor(y / rect.height * height);
 
-  var right = window.innerWidth - rect.x;
-  var bottom = window.innerHeight - rect.y;
-  var pixelRight = Math.min(Math.floor(right / rect.width * width), width);
-  var pixelBottom = Math.min(Math.floor(bottom / rect.height * height), height);
+  let right = window.innerWidth - rect.x;
+  let bottom = window.innerHeight - rect.y;
+  let pixelRight = Math.min(Math.floor(right / rect.width * width), width);
+  let pixelBottom = Math.min(Math.floor(bottom / rect.height * height), height);
 
   return {
     left: pixelX,
@@ -200,7 +201,7 @@ function quantizeToChunkCeil(number) {
 
 function renderSafariCompatibilityAlert() {
   if (is.safari()) {
-    let message = 'I can\'t get the pixels to not get blurry in Safari so would you please switch to another browser like Chrome or Firefox?';
+    let message = `I can't get the pixels to not get blurry in Safari so would you please switch to another browser like Chrome or Firefox?`;
     let warning = createAlert(message);
     document.body.prepend(warning);
   }
@@ -258,8 +259,8 @@ function createCanvas() {
 
 function renderCanvas(x, y) {
   canvas = createCanvas();
-  canvas.style.left = '-' + x + 'px';
-  canvas.style.top = '-' + y + 'px';
+  canvas.style.left = `-${x}px`;
+  canvas.style.top = `-${y}px`;
   document.body.append(canvas);
   panzoom(canvas, {
     smoothScroll: false,

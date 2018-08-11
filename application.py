@@ -59,7 +59,6 @@ def update_user_count():
 
 # broadcast and save changes to the image, then clear the changes and reset the counter
 def commit_pixel_changes():
-  # make these variables accessible
   global pixel_changes
   global counter
 
@@ -91,7 +90,6 @@ def index():
 def go_to(x, y):
   return render_template('index.html', x=x, y=y)
 
-
 @socketio.on('request chunks')
 def send_image(data):
   chunks = []
@@ -103,7 +101,6 @@ def send_image(data):
 # when a user places a pixel
 @socketio.on('change pixel')
 def change_pixel(data):
-  # make these variables accessible
   global pixel_changes
   global last_pixel_change_time
   global counter
