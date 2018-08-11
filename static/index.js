@@ -2,7 +2,7 @@ var socket;
 
 // drag vs click detection
 // https://stackoverflow.com/a/6042235
-var dragging = false;
+var mouseIsDragging = false;
 
 var canvasContext;
 
@@ -16,7 +16,7 @@ var chunksLoaded;
 
 var currentColor = 'rgb(34, 34, 34)';
 
-var requesting = true;
+var allChunksAreLoaded = false;
 
 var canvas;
 
@@ -77,7 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.emit('request chunks', { chunks: getVisibleUnloadedChunks()});
   });
 
-  // write pixels when server sends chunks
   socket.on('send chunks', data => {
     data.chunks.forEach(function(chunk) {
       let chunkHolder = canvasContext.createImageData(chunkSize, chunkSize);
@@ -87,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // create the color swatch area
   renderSwatches();
 
 
@@ -108,19 +106,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// when the mouse clicks on the canvas, do something depending on if it's dragging or not
 function handleCanvasMouseup(event) {
-  // if mouse is dragging canvas,
-  if (dragging) {
-    let imageRect = getImageRectangle();
-    // change the URL to that of the position
-    window.history.pushState(null, null, '/' + imageRect.left + ',' + imageRect.top);
-    // request chunks if not all chunks are loaded
-    if (requesting)
+  if (mouseIsDragging) {
+    updateUrl();
+    if (!allChunksAreLoaded)
       requestChunks();
-    return;
+  } else {
+    placePixel(event);
   }
-  placePixel(event);
+}
+
+function updateUrl() {
+  let imageRect = getImageRectangle();
+  window.history.pushState(null, null, '/' + imageRect.left + ',' + imageRect.top);
 }
 
 
@@ -154,10 +152,10 @@ function getImageRectangle(rect = canvas.getBoundingClientRect()) {
   var pixelX = Math.floor(x / rect.width * width);
   var pixelY = Math.floor(y / rect.height * height);
 
-  var right = Math.min(window.innerWidth - rect.x, width);
-  var bottom = Math.min(window.innerHeight - rect.y, height);
-  var pixelRight = Math.floor(right / rect.width * width);
-  var pixelBottom = Math.floor(bottom / rect.height * height);
+  var right = window.innerWidth - rect.x;
+  var bottom = window.innerHeight - rect.y;
+  var pixelRight = Math.min(Math.floor(right / rect.width * width), width);
+  var pixelBottom = Math.min(Math.floor(bottom / rect.height * height), height);
 
   return {
     left: pixelX,
@@ -166,19 +164,17 @@ function getImageRectangle(rect = canvas.getBoundingClientRect()) {
     bottom: pixelBottom
   };
 }
-
 // request chunks from the server
 function requestChunks() {
-  var chunks = getVisibleUnloadedChunks();
+  let chunks = getVisibleUnloadedChunks();
   if (chunks.length > 0) {
     chunks.forEach(function(chunk) {
       chunksLoaded[chunk.i][chunk.j] = true;
     });
     socket.emit('request chunks', {chunks: chunks});
   }
-  if (chunksLoaded.every(row => row.every(col => col))) {
-    requesting = false;
-  }
+  if (chunksLoaded.every(row => row.every(col => col)))
+    allChunksAreLoaded = true;
 }
 
 // return the chunks contained in the given rectangle that aren't loaded yet
@@ -195,7 +191,7 @@ function getVisibleUnloadedChunks(rect=canvas.getBoundingClientRect()) {
     for (let col = left; col < right; col += chunkSize) {
       if (!chunksLoaded[row / chunkSize][col / chunkSize]) {
         chunks.push({
-          rectangle: [col, row, Math.min(col + chunkSize, width), Math.min(row + chunkSize, height)],
+          rectangle: [col, row, col + chunkSize, row + chunkSize],
           i: row / chunkSize,
           j: col / chunkSize
         });
@@ -276,10 +272,10 @@ function createCanvas() {
   canvas.width = width;
   canvas.height = height;
   canvas.addEventListener("mousedown", function() {
-    dragging = false;
+    mouseIsDragging = false;
   }, false);
   canvas.addEventListener("mousemove", function() {
-    dragging = true;
+    mouseIsDragging = true;
   }, false);
   canvas.addEventListener("mouseup", handleCanvasMouseup, false);
   return canvas;
