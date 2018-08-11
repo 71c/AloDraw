@@ -12,7 +12,7 @@ var chunkSize;
 var width;
 var height;
 
-var chunksLoaded;
+var chunkLoadingStatusTable;
 
 var currentColor = 'rgb(34, 34, 34)';
 
@@ -20,8 +20,6 @@ var allChunksAreLoaded = false;
 
 var canvas;
 
-
-// the colors to choose from
 var colors = [
   'rgb(255, 255, 255)',
   'rgb(228, 228, 228)',
@@ -44,10 +42,9 @@ var colors = [
 var user_id = localStorage.getItem('user_id');
 
 document.addEventListener('DOMContentLoaded', () => {
-
-  var userCountElement = document.getElementById('user_count');
-
+  renderSwatches();
   renderBrowserCompatibilityWarnings();
+  var userCountElement = document.getElementById('user_count');
 
   socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
@@ -86,9 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  renderSwatches();
-
-
   socket.on('broadcast change pixels', data => {
     let pixelHolder = canvasContext.createImageData(1, 1);
     for (let pixel_change of data.pixel_changes) {
@@ -103,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
   socket.on('give new user id', data => {
     localStorage.setItem('user_id', data.user_id);
   });
-
 });
 
 function handleCanvasMouseup(event) {
@@ -120,7 +113,6 @@ function updateUrl() {
   let imageRect = getImageRectangle();
   window.history.pushState(null, null, '/' + imageRect.left + ',' + imageRect.top);
 }
-
 
 function placePixel(event) {
   // get x and y positions of the mouse relative to the canvas.
@@ -164,20 +156,19 @@ function getImageRectangle(rect = canvas.getBoundingClientRect()) {
     bottom: pixelBottom
   };
 }
-// request chunks from the server
+
 function requestChunks() {
   let chunks = getVisibleUnloadedChunks();
   if (chunks.length > 0) {
     chunks.forEach(function(chunk) {
-      chunksLoaded[chunk.i][chunk.j] = true;
+      chunkLoadingStatusTable[chunk.i][chunk.j] = true;
     });
     socket.emit('request chunks', {chunks: chunks});
   }
-  if (chunksLoaded.every(row => row.every(col => col)))
+  if (chunkLoadingStatusTable.every(row => row.every(col => col)))
     allChunksAreLoaded = true;
 }
 
-// return the chunks contained in the given rectangle that aren't loaded yet
 function getVisibleUnloadedChunks(rect=canvas.getBoundingClientRect()) {
   let imageRect = getImageRectangle(rect);
 
@@ -189,7 +180,7 @@ function getVisibleUnloadedChunks(rect=canvas.getBoundingClientRect()) {
   let chunks = [];
   for (let row = top; row < bottom; row += chunkSize) {
     for (let col = left; col < right; col += chunkSize) {
-      if (!chunksLoaded[row / chunkSize][col / chunkSize]) {
+      if (!chunkLoadingStatusTable[row / chunkSize][col / chunkSize]) {
         chunks.push({
           rectangle: [col, row, col + chunkSize, row + chunkSize],
           i: row / chunkSize,
@@ -241,7 +232,7 @@ function renderSwatches() {
 }
 
 function createAlert(message) {
-  var warning = document.createElement('div');
+  let warning = document.createElement('div');
   warning.setAttribute('class', 'alert alert-warning');
   warning.setAttribute('role', 'alert');
   warning.innerHTML = message;
@@ -303,5 +294,5 @@ function setCanvasImage() {
 function setChunksLoaded() {
   let rowCount = Math.ceil(height / chunkSize);
   let colCount = Math.ceil(width / chunkSize);
-  chunksLoaded = createFilled2dArray(rowCount, colCount, false);
+  chunkLoadingStatusTable = createFilled2dArray(rowCount, colCount, false);
 }
