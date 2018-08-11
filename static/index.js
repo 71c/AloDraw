@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
   socket.emit('request image dimensions');
 
   if (!user_id) {
-    socket.emit('request new user id');
+    socket.emit('request new user id', {'browser': getUserBrowser(), 'user_agent': navigator.userAgent});
   }
   else {
     socket.emit('enter site', { user_id: user_id });
@@ -132,6 +132,18 @@ function createAlert(message) {
   warning.innerHTML = message;
   return warning;
 }
+
+function getUserBrowser() {
+  let browser = is.ie() ? 'internet explorer' :
+      is.edge() ? 'edge' :
+      is.opera() ? 'opera' :
+      is.chrome() ? 'chrome' :
+      is.firefox() ? 'firefox' :
+      is.safari() ? 'safari' :
+      null;
+  return browser;
+}
+
 
 function renderCanvas(x, y) {
   canvas = createCanvas();
@@ -282,3 +294,4 @@ function createFilled2dArray(rowCount, colCount, val) {
   }
   return arr;
 }
+
