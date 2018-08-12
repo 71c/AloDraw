@@ -14,6 +14,8 @@ let allChunksAreLoaded = false;
 // https://stackoverflow.com/a/6042235
 let mouseIsDragging = false;
 
+let mouseIsDown = false;
+
 let currentColor = 'rgb(34, 34, 34)';
 const colors = [
   'rgb(255, 255, 255)',
@@ -150,6 +152,7 @@ function getUserBrowser() {
 function renderCanvas(x, y) {
   canvas = createCanvas();
   document.body.append(canvas);
+  document.body.onresize = requestChunks;
   panzoom(canvas, {
     smoothScroll: false,
     zoomDoubleClickSpeed: 1,
@@ -162,24 +165,32 @@ function createCanvas() {
   let canvas = document.createElement('canvas');
   canvas.addEventListener("mousedown", function() {
     mouseIsDragging = false;
+    mouseIsDown = true;
   }, false);
   canvas.addEventListener("mousemove", function() {
     mouseIsDragging = true;
   }, false);
   canvas.addEventListener("mouseup", handleCanvasMouseup, false);
+  canvas.addEventListener("mouseout", function() {
+    if (mouseIsDown)
+      handleCanvasMove();
+  }, false);
   return canvas;
 }
 
 function handleCanvasMouseup(event) {
+  mouseIsDown = false;
   if (mouseIsDragging) {
-    updateUrl();
-    if (!allChunksAreLoaded) {
-      requestChunks();
-    }
+    handleCanvasMove();
   }
   else {
     placePixel(event);
   }
+}
+
+function handleCanvasMove() {
+  updateUrl();
+  requestChunks();
 }
 
 function updateUrl() {
@@ -188,6 +199,7 @@ function updateUrl() {
 }
 
 function requestChunks() {
+  if (allChunksAreLoaded) return;
   let chunks = getVisibleUnloadedChunks();
   if (chunks.length > 0) {
     chunks.forEach(function(chunk) {
