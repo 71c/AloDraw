@@ -2,7 +2,6 @@ let socket;
 
 let canvas;
 let canvasContext;
-let image = new Image();
 
 let chunkSize;
 let width;
@@ -150,15 +149,13 @@ function getUserBrowser() {
 
 function renderCanvas(x, y) {
   canvas = createCanvas();
-  canvas.style.left = `-${x}px`;
-  canvas.style.top = `-${y}px`;
   document.body.append(canvas);
   panzoom(canvas, {
     smoothScroll: false,
     zoomDoubleClickSpeed: 1,
     minZoom: 1,
     maxZoom: 10
-  });
+  }).moveTo(-x, -y);
 }
 
 function createCanvas() {

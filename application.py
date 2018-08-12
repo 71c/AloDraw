@@ -84,7 +84,7 @@ def send_user_count():
 
 @app.route('/')
 def index():
-  return render_template('index.html')
+  return render_template('index.html', x=0, y=0)
 
 @app.route('/<int:x>,<int:y>')
 def go_to(x, y):
