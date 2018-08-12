@@ -150,19 +150,18 @@ function getUserBrowser() {
 }
 
 function renderCanvas(x, y) {
-  canvas = createCanvas();
+  canvas = document.createElement('canvas');
   document.body.append(canvas);
-  document.body.onresize = requestChunks;
   panzoom(canvas, {
     smoothScroll: false,
     zoomDoubleClickSpeed: 1,
     minZoom: 1,
     maxZoom: 10
   }).moveTo(-x, -y);
+  addChunkRequestEvents();
 }
 
-function createCanvas() {
-  let canvas = document.createElement('canvas');
+function addChunkRequestEvents() {
   canvas.addEventListener("mousedown", function() {
     mouseIsDragging = false;
     mouseIsDown = true;
@@ -175,7 +174,7 @@ function createCanvas() {
     if (mouseIsDown)
       handleCanvasMove();
   }, false);
-  return canvas;
+  document.body.onresize = requestChunks;
 }
 
 function handleCanvasMouseup(event) {
