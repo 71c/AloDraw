@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
     canvas.height = height;
     canvasContext = canvas.getContext('2d', { alpha: false });
     setChunksLoaded();
-    requestChunks();
+    loadChunks();
   });
 
   socket.on('send chunks', data => {
@@ -174,7 +174,7 @@ function addChunkRequestEvents() {
     if (mouseIsDown)
       handleCanvasMove();
   }, false);
-  document.body.onresize = requestChunks;
+  document.body.onresize = loadChunks;
 }
 
 function handleCanvasMouseup(event) {
@@ -189,7 +189,7 @@ function handleCanvasMouseup(event) {
 
 function handleCanvasMove() {
   updateUrl();
-  requestChunks();
+  loadChunks();
 }
 
 function updateUrl() {
@@ -197,17 +197,27 @@ function updateUrl() {
   window.history.pushState(null, null, `/${imageRect.left},${imageRect.top}`);
 }
 
-function requestChunks() {
+function loadChunks() {
   if (allChunksAreLoaded) return;
-  let chunks = getVisibleUnloadedChunks();
+  let rect = canvas.getBoundingClientRect();
+  requestChunksInRect(rect);
+  rect.top -= chunkSize;
+  rect.left -= chunkSize;
+  rect.bottom += chunkSize;
+  rect.right += chunkSize;
+  requestChunksInRect(rect);
+  if (chunkLoadingStatusTable.every(row => row.every(col => col))) {
+    allChunksAreLoaded = true;
+  }
+}
+
+function requestChunksInRect(rect = canvas.getBoundingClientRect()) {
+  let chunks = getVisibleUnloadedChunks(rect);
   if (chunks.length > 0) {
     chunks.forEach(function(chunk) {
       chunkLoadingStatusTable[chunk.i][chunk.j] = true;
     });
     socket.emit('request chunks', { chunks: chunks });
-  }
-  if (chunkLoadingStatusTable.every(row => row.every(col => col))) {
-    allChunksAreLoaded = true;
   }
 }
 
